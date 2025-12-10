@@ -282,7 +282,7 @@ export default function Profile() {
               <TabsContent value="certificates" className="mt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {mockCertificates.map((cert) => (
-                    <Card key={cert.id} variant="outline">
+                    <Card key={cert.id} className="border-border/50">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <div className="p-2 rounded-lg bg-accent/10">
