@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Shield, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const [uid, setUid] = useState('');
@@ -14,28 +15,38 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signInWithUid } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!uid || !password) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter both UID and password.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate login - will be replaced with actual auth
-    setTimeout(() => {
-      if (uid && password) {
-        toast({
-          title: 'Login Successful',
-          description: 'Welcome back to BSG Portal!',
-        });
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: 'Login Failed',
-          description: 'Please enter valid credentials.',
-          variant: 'destructive',
-        });
-      }
+    const { error } = await signInWithUid(uid, password);
+
+    if (error) {
+      toast({
+        title: 'Login Failed',
+        description: error.message || 'Invalid credentials. Please try again.',
+        variant: 'destructive',
+      });
       setIsLoading(false);
-    }, 1000);
+    } else {
+      toast({
+        title: 'Login Successful',
+        description: 'Welcome back to BSG Portal!',
+      });
+      navigate('/dashboard');
+    }
   };
 
   return (
