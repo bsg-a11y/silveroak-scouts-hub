@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Award, Download, Trash2, Search } from 'lucide-react';
+import { Plus, Award, Trash2, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCertificates } from '@/hooks/useCertificates';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
+import { SecureDownloadButton } from '@/components/SecureDownloadButton';
 
 export default function Certificates() {
   const { certificates, isLoading, createCertificate, deleteCertificate } = useCertificates();
@@ -174,12 +175,11 @@ export default function Certificates() {
                   </div>
                   <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
                     {cert.certificate_url && (
-                      <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <a href={cert.certificate_url} target="_blank" rel="noopener noreferrer">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </a>
-                      </Button>
+                      <SecureDownloadButton
+                        url={cert.certificate_url}
+                        filename={`${cert.name}.pdf`}
+                        className="flex-1"
+                      />
                     )}
                     {isAdminOrCoordinator && (
                       <Button
