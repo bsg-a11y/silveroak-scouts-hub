@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { memberSchema, validateData } from '@/lib/validations';
 
 export interface Member {
   id: string;
@@ -92,6 +93,19 @@ export function useMembers() {
 
   const createMember = async (data: CreateMemberData) => {
     try {
+      // Validate input data
+      const validation = validateData(memberSchema, data);
+      if (validation.success === false) {
+        toast({
+          title: 'Validation Error',
+          description: validation.error,
+          variant: 'destructive',
+        });
+        return { success: false as const, error: validation.error };
+      }
+
+      const validatedData = validation.data;
+
       // Generate next UID
       const { data: uidData, error: uidError } = await supabase
         .rpc('generate_next_uid');
@@ -109,8 +123,8 @@ export function useMembers() {
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            first_name: data.first_name,
-            last_name: data.last_name,
+            first_name: validatedData.first_name,
+            last_name: validatedData.last_name,
           }
         }
       });
@@ -124,27 +138,27 @@ export function useMembers() {
         .insert({
           user_id: authData.user.id,
           uid,
-          first_name: data.first_name,
-          middle_name: data.middle_name || null,
-          last_name: data.last_name,
-          gender: data.gender || null,
-          date_of_birth: data.date_of_birth || null,
-          course_duration: data.course_duration || null,
-          college_name: data.college_name || 'Silver Oak University',
-          current_semester: data.current_semester || null,
-          enrollment_number: data.enrollment_number || null,
-          class_coordinator_name: data.class_coordinator_name || null,
-          hod_name: data.hod_name || null,
-          principal_name: data.principal_name || null,
-          whatsapp_number: data.whatsapp_number || null,
-          aadhaar_number: data.aadhaar_number || null,
-          blood_group: data.blood_group || null,
+          first_name: validatedData.first_name,
+          middle_name: validatedData.middle_name || null,
+          last_name: validatedData.last_name,
+          gender: validatedData.gender || null,
+          date_of_birth: validatedData.date_of_birth || null,
+          course_duration: validatedData.course_duration || null,
+          college_name: validatedData.college_name || 'Silver Oak University',
+          current_semester: validatedData.current_semester || null,
+          enrollment_number: validatedData.enrollment_number || null,
+          class_coordinator_name: validatedData.class_coordinator_name || null,
+          hod_name: validatedData.hod_name || null,
+          principal_name: validatedData.principal_name || null,
+          whatsapp_number: validatedData.whatsapp_number || null,
+          aadhaar_number: validatedData.aadhaar_number || null,
+          blood_group: validatedData.blood_group || null,
         });
 
       if (profileError) throw profileError;
 
       // Assign role
-      const role = (data.role || 'member') as 'admin' | 'coordinator' | 'core' | 'executive' | 'member';
+      const role = (validatedData.role || 'member') as 'admin' | 'coordinator' | 'core' | 'executive' | 'member';
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert([{
@@ -154,9 +168,10 @@ export function useMembers() {
 
       if (roleError) throw roleError;
 
+      // Don't show password in toast - return it securely for UI to handle
       toast({
         title: 'Member created successfully',
-        description: `UID: ${uid}, Password: ${password}`,
+        description: `UID: ${uid} - Credentials ready to copy`,
       });
 
       await fetchMembers();
