@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SecureAvatar } from '@/components/SecureAvatar';
 import {
   Table,
   TableBody,
@@ -442,12 +442,12 @@ export default function Members() {
                       <TableRow key={member.id} className="hover:bg-muted/30">
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
-                              <AvatarImage src={member.profile_photo_url || undefined} />
-                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                                {member.first_name[0]}{member.last_name[0]}
-                              </AvatarFallback>
-                            </Avatar>
+                            <SecureAvatar
+                              src={member.profile_photo_url}
+                              fallback={`${member.first_name[0]}${member.last_name[0]}`}
+                              className="h-9 w-9"
+                              fallbackClassName="text-sm"
+                            />
                             <div>
                               <p className="font-medium">
                                 {member.first_name} {member.middle_name} {member.last_name}

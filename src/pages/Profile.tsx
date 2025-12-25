@@ -2,7 +2,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SecureAvatar } from '@/components/SecureAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Pencil, 
@@ -73,11 +73,12 @@ export default function Profile() {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar & Basic Info */}
               <div className="flex flex-col items-center md:items-start">
-                <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-display">
-                    {mockProfile.firstName[0]}{mockProfile.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
+                <SecureAvatar
+                  src={null}
+                  fallback={`${mockProfile.firstName[0]}${mockProfile.lastName[0]}`}
+                  className="h-24 w-24 md:h-32 md:w-32"
+                  fallbackClassName="bg-primary text-primary-foreground text-3xl font-display"
+                />
                 <Button variant="outline" size="sm" className="mt-4">
                   <Pencil className="h-4 w-4 mr-2" />
                   Change Photo

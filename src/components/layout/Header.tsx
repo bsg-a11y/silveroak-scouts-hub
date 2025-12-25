@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SecureAvatar } from '@/components/SecureAvatar';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -108,12 +108,12 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-3 px-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user.avatar || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {user.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
+              <SecureAvatar
+                src={user.avatar}
+                fallback={user.name.split(' ').map(n => n[0]).join('')}
+                className="h-8 w-8"
+                fallbackClassName="bg-primary text-primary-foreground text-sm"
+              />
               <div className="hidden lg:flex flex-col items-start">
                 <span className="text-sm font-medium">{user.name}</span>
                 <span className="text-xs text-muted-foreground">{user.uid}</span>
