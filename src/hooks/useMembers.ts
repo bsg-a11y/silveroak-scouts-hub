@@ -114,7 +114,15 @@ export function useMembers() {
 
       const uid = uidData;
       const email = `${uid.toLowerCase()}@bsg.local`;
-      const password = Math.random().toString(36).slice(-8) + 'A1!';
+      
+      // Generate cryptographically secure password
+      const generateSecurePassword = (length = 16): string => {
+        const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+        const values = new Uint32Array(length);
+        crypto.getRandomValues(values);
+        return Array.from(values, v => charset[v % charset.length]).join('');
+      };
+      const password = generateSecurePassword(16);
 
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
