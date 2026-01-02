@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithUid = async (uid: string, password: string) => {
-    // First, find the user's email by UID
+    // First, find the profile by UID to get user_id
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('user_id')
@@ -121,14 +121,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Invalid UID. Please check and try again.') };
     }
 
-    // Get user email from auth (we need to use service role for this, so we'll use a different approach)
-    // For now, we'll use email format: uid@bsg.local
-    const email = `${uid.toLowerCase()}@bsg.local`;
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    // Try login with the standard email format first (for members created via the system)
+    const standardEmail = `${uid.toLowerCase()}@bsg.local`;
+    let { error } = await supabase.auth.signInWithPassword({
+      email: standardEmail,
       password,
     });
+
+    // If that fails, try with the admin email format (for bootstrap admin)
+    if (error && uid.toUpperCase() === 'BSG001') {
+      const adminResult = await supabase.auth.signInWithPassword({
+        email: 'bsg@silveroakuni.ac.in',
+        password,
+      });
+      error = adminResult.error;
+    }
 
     return { error };
   };
