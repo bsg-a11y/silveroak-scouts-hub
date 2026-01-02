@@ -15,7 +15,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signInWithUid } = useAuth();
+  const { signInWithUid, signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +31,10 @@ export default function Login() {
 
     setIsLoading(true);
 
-    const { error } = await signInWithUid(uid, password);
+    const identifier = uid.trim();
+    const { error } = identifier.includes('@')
+      ? await signIn(identifier, password)
+      : await signInWithUid(identifier, password);
 
     if (error) {
       toast({
@@ -117,12 +120,15 @@ export default function Login() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="uid">Member UID</Label>
+                  <Label htmlFor="uid">Email or Member UID</Label>
                   <Input
                     id="uid"
-                    placeholder="e.g., BSG001"
+                    placeholder="e.g., BSG001 or bsg@silveroakuni.ac.in"
                     value={uid}
-                    onChange={(e) => setUid(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setUid(value.includes('@') ? value : value.toUpperCase());
+                    }}
                     className="input-focus"
                     autoComplete="username"
                   />

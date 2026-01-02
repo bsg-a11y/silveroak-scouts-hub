@@ -110,26 +110,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithUid = async (uid: string, password: string) => {
-    // First, find the profile by UID to get user_id
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('uid', uid.toUpperCase())
-      .maybeSingle();
+    // IMPORTANT: Do not query profiles here. RLS blocks reads before auth, which breaks UID login.
+    const normalizedUid = uid.trim().toUpperCase();
 
-    if (profileError || !profileData) {
-      return { error: new Error('Invalid UID. Please check and try again.') };
+    if (!normalizedUid) {
+      return { error: new Error('Please enter a UID.') };
     }
 
-    // Try login with the standard email format first (for members created via the system)
-    const standardEmail = `${uid.toLowerCase()}@bsg.local`;
+    // Try login with the standard email format (for members created via the system)
+    const standardEmail = `${normalizedUid.toLowerCase()}@bsg.local`;
     let { error } = await supabase.auth.signInWithPassword({
       email: standardEmail,
       password,
     });
 
-    // If that fails, try with the admin email format (for bootstrap admin)
-    if (error && uid.toUpperCase() === 'BSG001') {
+    // If that fails, try with the bootstrap admin email (UID: BSG001)
+    if (error && normalizedUid === 'BSG001') {
       const adminResult = await supabase.auth.signInWithPassword({
         email: 'bsg@silveroakuni.ac.in',
         password,
