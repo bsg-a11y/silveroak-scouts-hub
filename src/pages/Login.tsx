@@ -37,6 +37,13 @@ export default function Login() {
       : await signInWithUid(identifier, password);
 
     if (error) {
+      console.warn('[Login] Sign-in failed', {
+        identifier,
+        message: error.message,
+        name: (error as any)?.name,
+        status: (error as any)?.status,
+      });
+
       toast({
         title: 'Login Failed',
         description: error.message || 'Invalid credentials. Please try again.',

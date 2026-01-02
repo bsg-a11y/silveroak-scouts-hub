@@ -124,13 +124,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
 
+    if (error) {
+      console.warn('[Auth] UID sign-in failed (standard email)', {
+        uid: normalizedUid,
+        email: standardEmail,
+        message: error.message,
+      });
+    }
+
     // If that fails, try with the bootstrap admin email (UID: BSG001)
     if (error && normalizedUid === 'BSG001') {
+      const adminEmail = 'bsg@silveroakuni.ac.in';
       const adminResult = await supabase.auth.signInWithPassword({
-        email: 'bsg@silveroakuni.ac.in',
+        email: adminEmail,
         password,
       });
       error = adminResult.error;
+
+      if (error) {
+        console.warn('[Auth] UID sign-in failed (admin email fallback)', {
+          uid: normalizedUid,
+          email: adminEmail,
+          message: error.message,
+        });
+      }
     }
 
     return { error };
