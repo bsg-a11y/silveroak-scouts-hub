@@ -470,7 +470,81 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_safe: {
+        Row: {
+          aadhaar_number: string | null
+          blood_group: string | null
+          class_coordinator_name: string | null
+          college_name: string | null
+          course_duration: string | null
+          created_at: string | null
+          current_semester: number | null
+          date_of_birth: string | null
+          enrollment_number: string | null
+          first_name: string | null
+          gender: string | null
+          hod_name: string | null
+          id: string | null
+          last_name: string | null
+          middle_name: string | null
+          principal_name: string | null
+          profile_photo_url: string | null
+          status: string | null
+          uid: string | null
+          updated_at: string | null
+          user_id: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          aadhaar_number?: never
+          blood_group?: string | null
+          class_coordinator_name?: string | null
+          college_name?: string | null
+          course_duration?: string | null
+          created_at?: string | null
+          current_semester?: number | null
+          date_of_birth?: string | null
+          enrollment_number?: string | null
+          first_name?: string | null
+          gender?: string | null
+          hod_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          middle_name?: string | null
+          principal_name?: string | null
+          profile_photo_url?: string | null
+          status?: string | null
+          uid?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp_number?: never
+        }
+        Update: {
+          aadhaar_number?: never
+          blood_group?: string | null
+          class_coordinator_name?: string | null
+          college_name?: string | null
+          course_duration?: string | null
+          created_at?: string | null
+          current_semester?: number | null
+          date_of_birth?: string | null
+          enrollment_number?: string | null
+          first_name?: string | null
+          gender?: string | null
+          hod_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          middle_name?: string | null
+          principal_name?: string | null
+          profile_photo_url?: string | null
+          status?: string | null
+          uid?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp_number?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_next_uid: { Args: never; Returns: string }
