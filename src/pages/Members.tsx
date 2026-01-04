@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ import {
   UserX,
   Loader2,
   Copy,
+  Key,
 } from 'lucide-react';
 import { useMembers, CreateMemberData } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,6 +71,9 @@ export default function Members() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ uid: string; password: string } | null>(null);
+  const [resetPasswordMember, setResetPasswordMember] = useState<{ id: string; userId: string; name: string } | null>(null);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
   const [formData, setFormData] = useState<CreateMemberData>({
     first_name: '',
     last_name: '',
@@ -175,6 +180,37 @@ export default function Members() {
     a.href = url;
     a.download = 'bsg_members.csv';
     a.click();
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordMember) return;
+    setIsResetting(true);
+    try {
+      const response = await supabase.functions.invoke('reset-password', {
+        body: { user_id: resetPasswordMember.userId },
+      });
+      
+      if (response.error) throw new Error(response.error.message);
+      if (!response.data.success) throw new Error(response.data.error);
+      
+      setNewPassword(response.data.password);
+      toast({ title: 'Password reset successfully' });
+    } catch (error: any) {
+      toast({
+        title: 'Error resetting password',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const copyNewPassword = () => {
+    if (newPassword) {
+      navigator.clipboard.writeText(newPassword);
+      toast({ title: 'Password copied to clipboard' });
+    }
   };
 
   return (
@@ -545,6 +581,14 @@ export default function Members() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setResetPasswordMember({
+                                  id: member.id,
+                                  userId: member.user_id,
+                                  name: `${member.first_name} ${member.last_name}`,
+                                })}>
+                                  <Key className="h-4 w-4 mr-2" />
+                                  Reset Password
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => toggleMemberStatus(member.id, member.status)}>
                                   {member.status === 'active' ? (
                                     <>
@@ -577,6 +621,70 @@ export default function Members() {
             )}
           </CardContent>
         </Card>
+
+        {/* Reset Password Dialog */}
+        <Dialog open={!!resetPasswordMember} onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordMember(null);
+            setNewPassword(null);
+          }
+        }}>
+          <DialogContent>
+            {newPassword ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Password Reset Successfully</DialogTitle>
+                  <DialogDescription>
+                    New password for {resetPasswordMember?.name}. Save this - it cannot be recovered.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">New Password:</span>
+                    <code className="bg-background px-2 py-1 rounded">{newPassword}</code>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={copyNewPassword}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Password
+                  </Button>
+                  <Button onClick={() => {
+                    setResetPasswordMember(null);
+                    setNewPassword(null);
+                  }}>
+                    Done
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Reset Password</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to reset the password for {resetPasswordMember?.name}?
+                    A new random password will be generated.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setResetPasswordMember(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleResetPassword} disabled={isResetting}>
+                    {isResetting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Resetting...
+                      </>
+                    ) : (
+                      'Reset Password'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
