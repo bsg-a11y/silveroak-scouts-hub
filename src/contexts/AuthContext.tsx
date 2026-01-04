@@ -132,8 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // If that fails, try with the bootstrap admin email (UID: BSG001)
-    if (error && normalizedUid === 'BSG001') {
+    // If that fails, try with the bootstrap admin email (UID: BSG000 or BSG001 for backwards compat)
+    if (error && (normalizedUid === 'BSG000' || normalizedUid === 'BSG001')) {
       const adminEmail = 'bsg@silveroakuni.ac.in';
       const adminResult = await supabase.auth.signInWithPassword({
         email: adminEmail,

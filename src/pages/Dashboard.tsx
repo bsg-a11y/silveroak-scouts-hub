@@ -44,11 +44,18 @@ export default function Dashboard() {
       color: 'primary',
     },
     { 
-      label: 'Upcoming Activities', 
-      value: stats.upcomingActivities, 
-      change: 'Scheduled events',
+      label: 'Activity Registrations', 
+      value: stats.activityRegistrations, 
+      change: `${stats.upcomingActivities} upcoming activities`,
       icon: Calendar,
       color: 'secondary',
+    },
+    { 
+      label: 'Meeting Attendees', 
+      value: stats.meetingAttendees, 
+      change: `${stats.upcomingMeetings} upcoming meetings`,
+      icon: Users,
+      color: 'success',
     },
     { 
       label: 'Pending Leaves', 
@@ -56,13 +63,6 @@ export default function Dashboard() {
       change: 'Requires action',
       icon: FileText,
       color: 'warning',
-    },
-    { 
-      label: 'Low Stock Items', 
-      value: stats.lowStockItems, 
-      change: 'Check inventory',
-      icon: PackageSearch,
-      color: 'destructive',
     },
   ];
 
@@ -131,6 +131,7 @@ export default function Dashboard() {
                       "p-3 rounded-xl",
                       stat.color === 'primary' && "bg-primary/10 text-primary",
                       stat.color === 'secondary' && "bg-bsg-green/10 text-bsg-green",
+                      stat.color === 'success' && "bg-emerald-500/10 text-emerald-500",
                       stat.color === 'warning' && "bg-amber-500/10 text-amber-500",
                       stat.color === 'destructive' && "bg-destructive/10 text-destructive"
                     )}>
