@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { activitySchema } from '@/lib/validations';
 
 export interface Activity {
   id: string;
@@ -83,18 +84,40 @@ export function useActivities() {
   };
 
   const createActivity = async (data: CreateActivityData) => {
+    // Validate input data
+    const result = activitySchema.safeParse({
+      name: data.name,
+      description: data.description,
+      activity_date: data.activity_date,
+      activity_time: data.activity_time,
+      location: data.location,
+      capacity: data.capacity,
+      registration_enabled: data.registration_enabled,
+    });
+
+    if (!result.success) {
+      const errorMsg = result.error.errors.map(e => e.message).join(', ');
+      toast({
+        title: 'Validation Error',
+        description: errorMsg,
+        variant: 'destructive',
+      });
+      return { success: false, error: errorMsg };
+    }
+
     try {
+      const validated = result.data;
       const { error } = await supabase
         .from('activities')
         .insert({
-          name: data.name,
-          description: data.description || null,
-          activity_date: data.activity_date,
-          activity_time: data.activity_time || null,
-          location: data.location || null,
+          name: validated.name,
+          description: validated.description || null,
+          activity_date: validated.activity_date,
+          activity_time: validated.activity_time || null,
+          location: validated.location || null,
           status: data.status || 'upcoming',
-          registration_enabled: data.registration_enabled ?? true,
-          capacity: data.capacity || null,
+          registration_enabled: validated.registration_enabled ?? true,
+          capacity: validated.capacity || null,
           created_by: user?.id,
         });
 
@@ -117,10 +140,44 @@ export function useActivities() {
   };
 
   const updateActivity = async (id: string, data: Partial<CreateActivityData>) => {
+    // Validate input data (partial validation for updates)
+    const partialSchema = activitySchema.partial();
+    const result = partialSchema.safeParse({
+      name: data.name,
+      description: data.description,
+      activity_date: data.activity_date,
+      activity_time: data.activity_time,
+      location: data.location,
+      capacity: data.capacity,
+      registration_enabled: data.registration_enabled,
+    });
+
+    if (!result.success) {
+      const errorMsg = result.error.errors.map(e => e.message).join(', ');
+      toast({
+        title: 'Validation Error',
+        description: errorMsg,
+        variant: 'destructive',
+      });
+      return { success: false, error: errorMsg };
+    }
+
     try {
+      const validated = result.data;
+      const updateData: Record<string, any> = {};
+      
+      if (validated.name !== undefined) updateData.name = validated.name;
+      if (validated.description !== undefined) updateData.description = validated.description || null;
+      if (validated.activity_date !== undefined) updateData.activity_date = validated.activity_date;
+      if (validated.activity_time !== undefined) updateData.activity_time = validated.activity_time || null;
+      if (validated.location !== undefined) updateData.location = validated.location || null;
+      if (validated.capacity !== undefined) updateData.capacity = validated.capacity || null;
+      if (validated.registration_enabled !== undefined) updateData.registration_enabled = validated.registration_enabled;
+      if (data.status !== undefined) updateData.status = data.status;
+
       const { error } = await supabase
         .from('activities')
-        .update(data)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
