@@ -122,46 +122,15 @@ export function useMembers() {
         }
       }
 
-      // Generate next UID
-      const { data: uidData, error: uidError } = await supabase
-        .rpc('generate_next_uid');
+      // Get current session token for authorization
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('You must be logged in to create members');
+      }
 
-      if (uidError) throw uidError;
-
-      const uid = uidData;
-      const email = `${uid.toLowerCase()}@bsg.local`;
-      
-      // Generate cryptographically secure password
-      const generateSecurePassword = (length = 16): string => {
-        const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-        const values = new Uint32Array(length);
-        crypto.getRandomValues(values);
-        return Array.from(values, v => charset[v % charset.length]).join('');
-      };
-      const password = generateSecurePassword(16);
-
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            first_name: validatedData.first_name,
-            last_name: validatedData.last_name,
-          }
-        }
-      });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          uid,
+      // Call edge function to create member (uses service role, preserves admin session)
+      const response = await supabase.functions.invoke('create-member', {
+        body: {
           first_name: validatedData.first_name,
           middle_name: validatedData.middle_name || null,
           last_name: validatedData.last_name,
@@ -177,29 +146,26 @@ export function useMembers() {
           whatsapp_number: validatedData.whatsapp_number || null,
           aadhaar_number: validatedData.aadhaar_number || null,
           blood_group: validatedData.blood_group || null,
-        });
+          role: validatedData.role || 'member',
+        },
+      });
 
-      if (profileError) throw profileError;
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create member');
+      }
 
-      // Assign role
-      const role = (validatedData.role || 'member') as 'admin' | 'coordinator' | 'core' | 'executive' | 'member';
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: authData.user.id,
-          role,
-        }]);
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create member');
+      }
 
-      if (roleError) throw roleError;
-
-      // Don't show password in toast - return it securely for UI to handle
       toast({
         title: 'Member created successfully',
-        description: `UID: ${uid} - Credentials ready to copy`,
+        description: `UID: ${result.uid} - Credentials ready to copy`,
       });
 
       await fetchMembers();
-      return { uid, password, success: true };
+      return { uid: result.uid, password: result.password, success: true };
     } catch (error: any) {
       toast({
         title: 'Error creating member',
