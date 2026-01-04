@@ -112,6 +112,14 @@ export function useInventory() {
 
       const { error } = await supabase.from('resource_assignments').insert(assignment);
       if (error) throw error;
+
+      // Notify the member
+      await supabase.from('notifications').insert({
+        user_id: assignment.user_id,
+        title: 'Resource Assigned',
+        message: `You have been assigned ${assignment.quantity} ${resource.unit || 'unit(s)'} of "${resource.name}".`,
+        type: 'info',
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });

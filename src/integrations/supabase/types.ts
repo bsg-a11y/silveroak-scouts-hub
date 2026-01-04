@@ -166,6 +166,50 @@ export type Database = {
           },
         ]
       }
+      certificate_requests: {
+        Row: {
+          activity_id: string | null
+          admin_comment: string | null
+          created_at: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          admin_comment?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          admin_comment?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_requests_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificates: {
         Row: {
           certificate_url: string | null
@@ -314,11 +358,13 @@ export type Database = {
           created_at: string
           current_semester: number | null
           date_of_birth: string | null
+          employee_id: string | null
           enrollment_number: string | null
           first_name: string
           gender: string | null
           hod_name: string | null
           id: string
+          is_program_officer: boolean | null
           last_name: string
           middle_name: string | null
           principal_name: string | null
@@ -338,11 +384,13 @@ export type Database = {
           created_at?: string
           current_semester?: number | null
           date_of_birth?: string | null
+          employee_id?: string | null
           enrollment_number?: string | null
           first_name: string
           gender?: string | null
           hod_name?: string | null
           id?: string
+          is_program_officer?: boolean | null
           last_name: string
           middle_name?: string | null
           principal_name?: string | null
@@ -362,11 +410,13 @@ export type Database = {
           created_at?: string
           current_semester?: number | null
           date_of_birth?: string | null
+          employee_id?: string | null
           enrollment_number?: string | null
           first_name?: string
           gender?: string | null
           hod_name?: string | null
           id?: string
+          is_program_officer?: boolean | null
           last_name?: string
           middle_name?: string | null
           principal_name?: string | null

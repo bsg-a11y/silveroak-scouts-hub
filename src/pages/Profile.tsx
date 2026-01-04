@@ -3,7 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SecureAvatar } from '@/components/SecureAvatar';
+import { ProfilePhotoUpload } from '@/components/ProfilePhotoUpload';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -176,16 +176,12 @@ export default function Profile() {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar & Basic Info */}
               <div className="flex flex-col items-center md:items-start">
-                <SecureAvatar
-                  src={fullProfile.profile_photo_url}
+                <ProfilePhotoUpload
+                  currentPhotoUrl={fullProfile.profile_photo_url}
+                  userId={user?.id || ''}
                   fallback={`${fullProfile.first_name[0]}${fullProfile.last_name[0]}`}
-                  className="h-24 w-24 md:h-32 md:w-32"
-                  fallbackClassName="bg-primary text-primary-foreground text-3xl font-display"
+                  onPhotoUpdated={(url) => setFullProfile({ ...fullProfile, profile_photo_url: url })}
                 />
-                <Button variant="outline" size="sm" className="mt-4">
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Change Photo
-                </Button>
               </div>
 
               {/* Profile Details */}

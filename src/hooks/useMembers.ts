@@ -245,13 +245,25 @@ export function useMembers() {
 
   const deleteMember = async (id: string, userId: string) => {
     try {
-      // Delete profile (will cascade to user via foreign key)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
+      // Get current session token for authorization
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('You must be logged in to delete members');
+      }
 
-      if (error) throw error;
+      // Call edge function to delete member (handles all related records)
+      const response = await supabase.functions.invoke('delete-member', {
+        body: { user_id: userId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to delete member');
+      }
+
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete member');
+      }
 
       toast({
         title: 'Member deleted successfully',
