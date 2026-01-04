@@ -97,8 +97,8 @@ export default function Members() {
   const { isAdminOrCoordinator } = useAuth();
   const { toast } = useToast();
 
-  // Filter out program officer (BSG000) from member count and list
-  const regularMembers = members.filter(m => !m.uid?.startsWith('BSG000'));
+  // Filter out program officer (BSGSOU000) from member count and list
+  const regularMembers = members.filter(m => !m.uid?.startsWith('BSGSOU000'));
 
   const filteredMembers = regularMembers.filter(
     (member) =>
