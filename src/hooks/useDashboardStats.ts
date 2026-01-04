@@ -8,6 +8,9 @@ export interface DashboardStats {
   pendingLeaveRequests: number;
   lowStockItems: number;
   attendancePercentage: number;
+  activityRegistrations: number;
+  upcomingMeetings: number;
+  meetingAttendees: number;
 }
 
 export function useDashboardStats() {
@@ -18,12 +21,17 @@ export function useDashboardStats() {
     pendingLeaveRequests: 0,
     lowStockItems: 0,
     attendancePercentage: 0,
+    activityRegistrations: 0,
+    upcomingMeetings: 0,
+    meetingAttendees: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchStats = async () => {
     setIsLoading(true);
     try {
+      const today = new Date().toISOString().split('T')[0];
+
       // Fetch members count
       const { count: totalMembers } = await supabase
         .from('profiles')
@@ -35,12 +43,48 @@ export function useDashboardStats() {
         .eq('status', 'active');
 
       // Fetch upcoming activities count
-      const today = new Date().toISOString().split('T')[0];
       const { count: upcomingActivities } = await supabase
         .from('activities')
         .select('*', { count: 'exact', head: true })
         .gte('activity_date', today)
         .eq('status', 'upcoming');
+
+      // Fetch activity registrations for upcoming activities
+      const { data: upcomingActivityIds } = await supabase
+        .from('activities')
+        .select('id')
+        .gte('activity_date', today)
+        .eq('status', 'upcoming');
+
+      let activityRegistrations = 0;
+      if (upcomingActivityIds && upcomingActivityIds.length > 0) {
+        const { count } = await supabase
+          .from('activity_registrations')
+          .select('*', { count: 'exact', head: true })
+          .in('activity_id', upcomingActivityIds.map(a => a.id));
+        activityRegistrations = count || 0;
+      }
+
+      // Fetch upcoming meetings count
+      const { count: upcomingMeetings } = await supabase
+        .from('meetings')
+        .select('*', { count: 'exact', head: true })
+        .gte('meeting_date', today);
+
+      // Fetch meeting attendees (attendance records for upcoming meetings)
+      const { data: upcomingMeetingIds } = await supabase
+        .from('meetings')
+        .select('id')
+        .gte('meeting_date', today);
+
+      let meetingAttendees = 0;
+      if (upcomingMeetingIds && upcomingMeetingIds.length > 0) {
+        const { count } = await supabase
+          .from('attendance')
+          .select('*', { count: 'exact', head: true })
+          .in('meeting_id', upcomingMeetingIds.map(m => m.id));
+        meetingAttendees = count || 0;
+      }
 
       // Fetch pending leave requests
       const { count: pendingLeaveRequests } = await supabase
@@ -75,6 +119,9 @@ export function useDashboardStats() {
         pendingLeaveRequests: pendingLeaveRequests || 0,
         lowStockItems: lowStockItems || 0,
         attendancePercentage,
+        activityRegistrations,
+        upcomingMeetings: upcomingMeetings || 0,
+        meetingAttendees,
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
