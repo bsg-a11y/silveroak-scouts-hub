@@ -82,13 +82,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate next UID using service role
-    const { data: uidData, error: uidError } = await adminClient.rpc("generate_next_uid");
+    // Generate next UID (validated against the caller's role)
+    const { data: uidData, error: uidError } = await adminClient.rpc("generate_next_uid_for", {
+      _caller: callerUser.id,
+    });
     if (uidError) {
       console.error("UID generation error:", uidError);
       return new Response(
-        JSON.stringify({ error: "Failed to generate UID: " + uidError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: uidError.message }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

@@ -548,6 +548,7 @@ export type Database = {
     }
     Functions: {
       generate_next_uid: { Args: never; Returns: string }
+      generate_next_uid_for: { Args: { _caller: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
