@@ -4,21 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Award, Trash2, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Award, Trash2, Search, Check, X, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCertificates } from '@/hooks/useCertificates';
+import { useCertificateRequests } from '@/hooks/useCertificateRequests';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
 import { SecureDownloadButton } from '@/components/SecureDownloadButton';
 
 export default function Certificates() {
   const { certificates, isLoading, createCertificate, deleteCertificate } = useCertificates();
+  const { requests, isLoading: requestsLoading, updateRequest } = useCertificateRequests();
   const { members } = useMembers();
   const { isAdminOrCoordinator } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [reviewDialog, setReviewDialog] = useState<{ id: string; status: string } | null>(null);
+  const [adminComment, setAdminComment] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     event_name: '',
@@ -34,6 +40,17 @@ export default function Certificates() {
     setIsDialogOpen(false);
   };
 
+  const handleReview = async () => {
+    if (!reviewDialog) return;
+    await updateRequest.mutateAsync({
+      id: reviewDialog.id,
+      status: reviewDialog.status,
+      admin_comment: adminComment,
+    });
+    setReviewDialog(null);
+    setAdminComment('');
+  };
+
   const filteredCertificates = certificates.filter(cert =>
     cert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     cert.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,6 +58,9 @@ export default function Certificates() {
     cert.profile?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     cert.profile?.uid?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const pendingRequests = requests.filter(r => r.status === 'pending');
+  const processedRequests = requests.filter(r => r.status !== 'pending');
 
   if (isLoading) {
     return (
@@ -131,71 +151,212 @@ export default function Certificates() {
           />
         </div>
 
-        {/* Certificates Grid */}
-        {filteredCertificates.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              {searchQuery ? 'No certificates found matching your search' : 'No certificates issued yet'}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCertificates.map((cert, index) => (
-              <Card 
-                key={cert.id} 
-                className="animate-slide-up"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-accent/10">
-                      <Award className="h-6 w-6 text-accent" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground truncate">{cert.name}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{cert.event_name}</p>
-                      <div className="mt-2 space-y-1">
-                        <p className="text-sm">
-                          <span className="text-muted-foreground">Issued to: </span>
-                          <span className="font-medium">
-                            {cert.profile?.first_name} {cert.profile?.last_name}
-                          </span>
-                        </p>
-                        <p className="text-sm">
-                          <span className="text-muted-foreground">UID: </span>
-                          <code className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
-                            {cert.profile?.uid}
-                          </code>
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(cert.issue_date), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
-                    {cert.certificate_url && (
-                      <SecureDownloadButton
-                        url={cert.certificate_url}
-                        filename={`${cert.name}.pdf`}
-                        className="flex-1"
-                      />
-                    )}
-                    {isAdminOrCoordinator && (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => deleteCertificate.mutate(cert.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+        {/* Tabs for Certificates and Requests */}
+        <Tabs defaultValue="certificates" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="certificates">Certificates ({certificates.length})</TabsTrigger>
+            {isAdminOrCoordinator && (
+              <TabsTrigger value="requests">
+                Requests ({pendingRequests.length} pending)
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <TabsContent value="certificates">
+            {/* Certificates Grid */}
+            {filteredCertificates.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  {searchQuery ? 'No certificates found matching your search' : 'No certificates issued yet'}
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCertificates.map((cert, index) => (
+                  <Card 
+                    key={cert.id} 
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-accent/10">
+                          <Award className="h-6 w-6 text-accent" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground truncate">{cert.name}</h3>
+                          <p className="text-sm text-muted-foreground truncate">{cert.event_name}</p>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">Issued to: </span>
+                              <span className="font-medium">
+                                {cert.profile?.first_name} {cert.profile?.last_name}
+                              </span>
+                            </p>
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">UID: </span>
+                              <code className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
+                                {cert.profile?.uid}
+                              </code>
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(cert.issue_date), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
+                        {cert.certificate_url && (
+                          <SecureDownloadButton
+                            url={cert.certificate_url}
+                            filename={`${cert.name}.pdf`}
+                            className="flex-1"
+                          />
+                        )}
+                        {isAdminOrCoordinator && (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => deleteCertificate.mutate(cert.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {isAdminOrCoordinator && (
+            <TabsContent value="requests" className="space-y-4">
+              {/* Pending Requests */}
+              <h3 className="font-semibold text-foreground">Pending Requests</h3>
+              {pendingRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center text-muted-foreground">
+                    No pending certificate requests
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {pendingRequests.map((req) => (
+                    <Card key={req.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium">
+                                {req.profile?.first_name} {req.profile?.last_name}
+                              </h4>
+                              <code className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
+                                {req.profile?.uid}
+                              </code>
+                              <Badge variant="warning">Pending</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-1">
+                              Activity: {req.activity?.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Reason: {req.reason}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Requested: {format(new Date(req.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 hover:bg-green-50"
+                              onClick={() => setReviewDialog({ id: req.id, status: 'approved' })}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => setReviewDialog({ id: req.id, status: 'rejected' })}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Processed Requests */}
+              {processedRequests.length > 0 && (
+                <>
+                  <h3 className="font-semibold text-foreground mt-6">Processed Requests</h3>
+                  <div className="grid gap-4">
+                    {processedRequests.slice(0, 10).map((req) => (
+                      <Card key={req.id} className="bg-muted/20">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">
+                                  {req.profile?.first_name} {req.profile?.last_name}
+                                </span>
+                                <Badge variant={req.status === 'approved' ? 'success' : 'danger'}>
+                                  {req.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {req.activity?.name}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+          )}
+        </Tabs>
+
+        {/* Review Dialog */}
+        <Dialog open={!!reviewDialog} onOpenChange={(open) => !open && setReviewDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {reviewDialog?.status === 'approved' ? 'Approve' : 'Reject'} Request
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Textarea
+                placeholder="Add a comment (optional)..."
+                value={adminComment}
+                onChange={(e) => setAdminComment(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setReviewDialog(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant={reviewDialog?.status === 'approved' ? 'default' : 'destructive'}
+                onClick={handleReview}
+                disabled={updateRequest.isPending}
+              >
+                {updateRequest.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  reviewDialog?.status === 'approved' ? 'Approve' : 'Reject'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -11,6 +11,7 @@ import { format, isPast, isToday } from 'date-fns';
 import { useMeetings, MeetingAttendee } from '@/hooks/useMeetings';
 import { useAuth } from '@/contexts/AuthContext';
 import { RegisteredMembersList } from '@/components/RegisteredMembersList';
+import { ExportMembersList } from '@/components/ExportMembersList';
 import { RegisteredMember } from '@/hooks/useActivities';
 
 export default function Meetings() {
@@ -258,10 +259,23 @@ export default function Meetings() {
         <Dialog open={!!viewAttendeesDialog} onOpenChange={(open) => !open && setViewAttendeesDialog(null)}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Meeting Attendees</DialogTitle>
-              <DialogDescription>
-                {meetings.find(m => m.id === viewAttendeesDialog)?.title}
-              </DialogDescription>
+              <div className="flex items-center justify-between pr-8">
+                <div>
+                  <DialogTitle>Meeting Attendees</DialogTitle>
+                  <DialogDescription>
+                    {meetings.find(m => m.id === viewAttendeesDialog)?.title}
+                  </DialogDescription>
+                </div>
+                {attendeesAsMembers.length > 0 && (
+                  <ExportMembersList
+                    members={attendeesAsMembers}
+                    title={meetings.find(m => m.id === viewAttendeesDialog)?.title || 'Meeting'}
+                    eventName={meetings.find(m => m.id === viewAttendeesDialog)?.title}
+                    eventDate={meetings.find(m => m.id === viewAttendeesDialog)?.meeting_date}
+                    venue={meetings.find(m => m.id === viewAttendeesDialog)?.location || undefined}
+                  />
+                )}
+              </div>
             </DialogHeader>
             <RegisteredMembersList 
               members={attendeesAsMembers} 

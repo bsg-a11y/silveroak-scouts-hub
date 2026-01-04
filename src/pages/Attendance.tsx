@@ -127,8 +127,8 @@ export default function Attendance() {
                               <p className="text-sm text-muted-foreground">{member.uid}</p>
                             </div>
                           </div>
-                          <Badge variant={currentStatus === 'present' ? 'success' : 'secondary'}>
-                            {currentStatus}
+                          <Badge variant={currentStatus === 'present' ? 'success' : 'danger'}>
+                            {currentStatus === 'present' ? 'Present' : 'Absent'}
                           </Badge>
                         </div>
                       );
@@ -231,8 +231,8 @@ export default function Attendance() {
                               <p className="text-sm text-muted-foreground">{member.uid}</p>
                             </div>
                           </div>
-                          <Badge variant={currentStatus === 'present' ? 'success' : 'secondary'}>
-                            {currentStatus}
+                          <Badge variant={currentStatus === 'present' ? 'success' : 'danger'}>
+                            {currentStatus === 'present' ? 'Present' : 'Absent'}
                           </Badge>
                         </div>
                       );

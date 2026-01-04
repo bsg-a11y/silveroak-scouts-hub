@@ -36,12 +36,15 @@ import {
   Check,
   X,
   Eye,
+  Award,
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useActivities, CreateActivityData, RegisteredMember } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
 import { RegisteredMembersList } from '@/components/RegisteredMembersList';
+import { ExportMembersList } from '@/components/ExportMembersList';
+import { useCertificateRequests } from '@/hooks/useCertificateRequests';
 
 export default function Activities() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -63,6 +66,9 @@ export default function Activities() {
 
   const { activities, isLoading, createActivity, registerForActivity, unregisterFromActivity, fetchRegisteredMembers } = useActivities();
   const { isAdminOrCoordinator, user } = useAuth();
+  const { createRequest } = useCertificateRequests();
+  const [certRequestDialog, setCertRequestDialog] = useState<{ activityId: string; activityName: string } | null>(null);
+  const [certRequestReason, setCertRequestReason] = useState('');
 
   // Fetch registered members when dialog opens
   useEffect(() => {
@@ -121,6 +127,15 @@ export default function Activities() {
     }
   };
 
+  const handleCertificateRequest = async () => {
+    if (!certRequestDialog || !certRequestReason.trim()) return;
+    await createRequest.mutateAsync({
+      activity_id: certRequestDialog.activityId,
+      reason: certRequestReason,
+    });
+    setCertRequestDialog(null);
+    setCertRequestReason('');
+  };
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -409,15 +424,68 @@ export default function Activities() {
         <Dialog open={!!viewRegistrationsDialog} onOpenChange={(open) => !open && setViewRegistrationsDialog(null)}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Registered Members</DialogTitle>
-              <DialogDescription>
-                {activities.find(a => a.id === viewRegistrationsDialog)?.name}
-              </DialogDescription>
+              <div className="flex items-center justify-between pr-8">
+                <div>
+                  <DialogTitle>Registered Members</DialogTitle>
+                  <DialogDescription>
+                    {activities.find(a => a.id === viewRegistrationsDialog)?.name}
+                  </DialogDescription>
+                </div>
+                {registeredMembers.length > 0 && (
+                  <ExportMembersList
+                    members={registeredMembers}
+                    title={activities.find(a => a.id === viewRegistrationsDialog)?.name || 'Activity'}
+                    eventName={activities.find(a => a.id === viewRegistrationsDialog)?.name}
+                    eventDate={activities.find(a => a.id === viewRegistrationsDialog)?.activity_date}
+                    venue={activities.find(a => a.id === viewRegistrationsDialog)?.location || undefined}
+                  />
+                )}
+              </div>
             </DialogHeader>
             <RegisteredMembersList 
               members={registeredMembers} 
               isLoading={isLoadingMembers}
             />
+          </DialogContent>
+        </Dialog>
+
+        {/* Certificate Request Dialog */}
+        <Dialog open={!!certRequestDialog} onOpenChange={(open) => !open && setCertRequestDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Request Certificate</DialogTitle>
+              <DialogDescription>
+                Request a certificate for: {certRequestDialog?.activityName}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Reason for Certificate Request</Label>
+                <Textarea
+                  value={certRequestReason}
+                  onChange={(e) => setCertRequestReason(e.target.value)}
+                  placeholder="Explain why you need this certificate..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCertRequestDialog(null)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCertificateRequest} 
+                disabled={!certRequestReason.trim() || createRequest.isPending}
+              >
+                {createRequest.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Request'
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -522,7 +590,7 @@ export default function Activities() {
                           </div>
                           <Badge variant="inactive">Completed</Badge>
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-4 w-4" />
                             {format(new Date(activity.activity_date), 'MMM d, yyyy')}
@@ -531,6 +599,28 @@ export default function Activities() {
                             <Users className="h-4 w-4" />
                             {activity.registered_count || 0} attended
                           </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {isAdminOrCoordinator && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setViewRegistrationsDialog(activity.id)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View Members
+                            </Button>
+                          )}
+                          {user && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setCertRequestDialog({ activityId: activity.id, activityName: activity.name })}
+                            >
+                              <Award className="h-3 w-3 mr-1" />
+                              Request Certificate
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

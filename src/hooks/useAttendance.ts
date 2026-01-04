@@ -56,6 +56,16 @@ export function useAttendance(activityId?: string, meetingId?: string) {
       
       const { error } = await supabase.from('attendance').insert(recordsWithMarker);
       if (error) throw error;
+
+      // Create notifications for each member
+      const notifications = records.map(r => ({
+        user_id: r.user_id,
+        title: 'Attendance Marked',
+        message: `Your attendance has been marked as ${r.status} for the ${r.activity_id ? 'activity' : 'meeting'}.`,
+        type: 'info',
+      }));
+
+      await supabase.from('notifications').insert(notifications);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });

@@ -81,13 +81,19 @@ export default function Members() {
     whatsapp_number: '',
     blood_group: '',
     role: 'member',
+    class_coordinator_name: '',
+    hod_name: '',
+    principal_name: '',
   });
   
-  const { members, isLoading, createMember, toggleMemberStatus, deleteMember } = useMembers();
+  const { members, isLoading, createMember, toggleMemberStatus, deleteMember, fetchMembers } = useMembers();
   const { isAdminOrCoordinator } = useAuth();
   const { toast } = useToast();
 
-  const filteredMembers = members.filter(
+  // Filter out program officer (BSG000) from member count and list
+  const regularMembers = members.filter(m => !m.uid?.startsWith('BSG000'));
+
+  const filteredMembers = regularMembers.filter(
     (member) =>
       member.uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -134,6 +140,9 @@ export default function Members() {
         whatsapp_number: '',
         blood_group: '',
         role: 'member',
+        class_coordinator_name: '',
+        hod_name: '',
+        principal_name: '',
       });
     }
   };
@@ -276,11 +285,36 @@ export default function Members() {
                           </Select>
                         </div>
                         <div className="space-y-2">
+                          <Label htmlFor="course_duration">Course Duration</Label>
+                          <Select 
+                            value={formData.course_duration} 
+                            onValueChange={(v) => setFormData({ ...formData, course_duration: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select duration" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="3 Years">3 Years</SelectItem>
+                              <SelectItem value="4 Years">4 Years</SelectItem>
+                              <SelectItem value="5 Years">5 Years</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="college_name">College Name</Label>
+                          <Input
+                            id="college_name"
+                            value={formData.college_name}
+                            onChange={(e) => setFormData({ ...formData, college_name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="enrollment_number">Enrollment Number</Label>
                           <Input
                             id="enrollment_number"
                             value={formData.enrollment_number}
                             onChange={(e) => setFormData({ ...formData, enrollment_number: e.target.value })}
+                            placeholder="1st sem: T + 13 digits, Others: 13 digits"
                           />
                         </div>
                         <div className="space-y-2">
@@ -295,11 +329,12 @@ export default function Members() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="whatsapp_number">WhatsApp Number</Label>
+                          <Label htmlFor="whatsapp_number">WhatsApp Number *</Label>
                           <Input
                             id="whatsapp_number"
                             value={formData.whatsapp_number}
                             onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
+                            placeholder="10 digits only"
                           />
                         </div>
                         <div className="space-y-2">
@@ -315,7 +350,31 @@ export default function Members() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2 md:col-span-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="hod_name">HOD Name</Label>
+                          <Input
+                            id="hod_name"
+                            value={formData.hod_name}
+                            onChange={(e) => setFormData({ ...formData, hod_name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="class_coordinator_name">Class Coordinator Name</Label>
+                          <Input
+                            id="class_coordinator_name"
+                            value={formData.class_coordinator_name}
+                            onChange={(e) => setFormData({ ...formData, class_coordinator_name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="principal_name">Principal Name</Label>
+                          <Input
+                            id="principal_name"
+                            value={formData.principal_name}
+                            onChange={(e) => setFormData({ ...formData, principal_name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
                           <Label>Role</Label>
                           <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
                             <SelectTrigger>
@@ -359,14 +418,14 @@ export default function Members() {
           <Card variant="stat">
             <CardContent className="p-4">
               <p className="text-sm text-muted-foreground">Total Members</p>
-              <p className="text-2xl font-bold font-display">{members.length}</p>
+              <p className="text-2xl font-bold font-display">{regularMembers.length}</p>
             </CardContent>
           </Card>
           <Card variant="stat">
             <CardContent className="p-4">
               <p className="text-sm text-muted-foreground">Active</p>
               <p className="text-2xl font-bold font-display text-bsg-green">
-                {members.filter(m => m.status === 'active').length}
+                {regularMembers.filter(m => m.status === 'active').length}
               </p>
             </CardContent>
           </Card>
@@ -374,7 +433,7 @@ export default function Members() {
             <CardContent className="p-4">
               <p className="text-sm text-muted-foreground">Inactive</p>
               <p className="text-2xl font-bold font-display text-muted-foreground">
-                {members.filter(m => m.status === 'inactive').length}
+                {regularMembers.filter(m => m.status === 'inactive').length}
               </p>
             </CardContent>
           </Card>
@@ -382,7 +441,7 @@ export default function Members() {
             <CardContent className="p-4">
               <p className="text-sm text-muted-foreground">Committee</p>
               <p className="text-2xl font-bold font-display text-primary">
-                {members.filter(m => m.role !== 'member').length}
+                {regularMembers.filter(m => m.role !== 'member').length}
               </p>
             </CardContent>
           </Card>
