@@ -55,6 +55,7 @@ import {
 import { useMembers, CreateMemberData } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { MemberDetailsDialog } from '@/components/MemberDetailsDialog';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -74,6 +75,7 @@ export default function Members() {
   const [resetPasswordMember, setResetPasswordMember] = useState<{ id: string; userId: string; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [viewDetailsMember, setViewDetailsMember] = useState<{ id: string; user_id: string; uid: string; first_name: string; last_name: string } | null>(null);
   const [formData, setFormData] = useState<CreateMemberData>({
     first_name: '',
     last_name: '',
@@ -581,6 +583,16 @@ export default function Members() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setViewDetailsMember({
+                                  id: member.id,
+                                  user_id: member.user_id,
+                                  uid: member.uid,
+                                  first_name: member.first_name,
+                                  last_name: member.last_name,
+                                })}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setResetPasswordMember({
                                   id: member.id,
                                   userId: member.user_id,
@@ -685,6 +697,13 @@ export default function Members() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Member Details Dialog */}
+        <MemberDetailsDialog
+          member={viewDetailsMember}
+          open={!!viewDetailsMember}
+          onOpenChange={(open) => !open && setViewDetailsMember(null)}
+        />
       </div>
     </DashboardLayout>
   );
