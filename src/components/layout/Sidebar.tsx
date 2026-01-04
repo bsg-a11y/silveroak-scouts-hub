@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -47,8 +48,24 @@ const bottomNavItems = [
 
 export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, isAdminOrCoordinator } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  // Filter nav items based on role
+  const filteredMainNavItems = mainNavItems.filter(
+    item => !item.adminOnly || isAdminOrCoordinator
+  );
+
+  const filteredBottomNavItems = bottomNavItems.filter(
+    item => !item.adminOnly || isAdminOrCoordinator
+  );
 
   return (
     <div className="h-full bg-sidebar flex flex-col border-r border-sidebar-border">
@@ -96,7 +113,7 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
       {/* Main Navigation */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="space-y-1">
-          {mainNavItems.map((item) => (
+          {filteredMainNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -126,7 +143,7 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
       {/* Bottom Navigation */}
       <div className="px-3 py-4 border-t border-sidebar-border">
         <div className="space-y-1">
-          {bottomNavItems.map((item) => (
+          {filteredBottomNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -144,6 +161,7 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
 
           {/* Logout Button */}
           <button
+            onClick={handleLogout}
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
               "text-sidebar-foreground/60 hover:bg-destructive/10 hover:text-destructive"

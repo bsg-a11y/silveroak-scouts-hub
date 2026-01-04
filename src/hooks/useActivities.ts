@@ -19,6 +19,19 @@ export interface Activity {
   is_registered?: boolean;
 }
 
+export interface RegisteredMember {
+  id: string;
+  user_id: string;
+  uid: string;
+  first_name: string;
+  last_name: string;
+  enrollment_number: string | null;
+  whatsapp_number: string | null;
+  college_name: string | null;
+  current_semester: number | null;
+  registered_at: string;
+}
+
 export interface CreateActivityData {
   name: string;
   description?: string;
@@ -230,6 +243,55 @@ export function useActivities() {
     }
   };
 
+  const fetchRegisteredMembers = async (activityId: string): Promise<RegisteredMember[]> => {
+    try {
+      // First get registrations
+      const { data: registrations, error: regError } = await supabase
+        .from('activity_registrations')
+        .select('id, registered_at, user_id')
+        .eq('activity_id', activityId);
+
+      if (regError || !registrations) {
+        console.error('Error fetching registrations:', regError);
+        return [];
+      }
+
+      // Then get profiles for those users
+      const userIds = registrations.map(r => r.user_id);
+      if (userIds.length === 0) return [];
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, uid, first_name, last_name, enrollment_number, whatsapp_number, college_name, current_semester')
+        .in('user_id', userIds);
+
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+        return [];
+      }
+
+      // Combine the data
+      return registrations.map((reg) => {
+        const profile = profiles?.find(p => p.user_id === reg.user_id);
+        return {
+          id: reg.id,
+          user_id: reg.user_id,
+          registered_at: reg.registered_at,
+          uid: profile?.uid || 'N/A',
+          first_name: profile?.first_name || 'Unknown',
+          last_name: profile?.last_name || '',
+          enrollment_number: profile?.enrollment_number || null,
+          whatsapp_number: profile?.whatsapp_number || null,
+          college_name: profile?.college_name || null,
+          current_semester: profile?.current_semester || null,
+        };
+      });
+    } catch (error: any) {
+      console.error('Error fetching registered members:', error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchActivities();
   }, [user]);
@@ -243,5 +305,6 @@ export function useActivities() {
     deleteActivity,
     registerForActivity,
     unregisterFromActivity,
+    fetchRegisteredMembers,
   };
 }

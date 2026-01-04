@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { memberSchema, validateData } from '@/lib/validations';
+import { memberSchema, validateData, validateEnrollmentNumber } from '@/lib/validations';
 
 export interface Member {
   id: string;
@@ -93,7 +93,7 @@ export function useMembers() {
 
   const createMember = async (data: CreateMemberData) => {
     try {
-      // Validate input data
+      // Validate input data with basic schema
       const validation = validateData(memberSchema, data);
       if (validation.success === false) {
         toast({
@@ -105,6 +105,22 @@ export function useMembers() {
       }
 
       const validatedData = validation.data;
+
+      // Additional semester-aware enrollment validation
+      if (validatedData.enrollment_number && validatedData.enrollment_number !== '') {
+        const enrollmentError = validateEnrollmentNumber(
+          validatedData.enrollment_number,
+          validatedData.current_semester
+        );
+        if (enrollmentError) {
+          toast({
+            title: 'Validation Error',
+            description: enrollmentError,
+            variant: 'destructive',
+          });
+          return { success: false as const, error: enrollmentError };
+        }
+      }
 
       // Generate next UID
       const { data: uidData, error: uidError } = await supabase

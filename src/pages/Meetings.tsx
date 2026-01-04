@@ -1,20 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Calendar, MapPin, Clock, FileText, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Plus, Calendar, MapPin, Clock, FileText, Trash2, Users, Eye } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
-import { useMeetings } from '@/hooks/useMeetings';
+import { useMeetings, MeetingAttendee } from '@/hooks/useMeetings';
 import { useAuth } from '@/contexts/AuthContext';
+import { RegisteredMembersList } from '@/components/RegisteredMembersList';
+import { RegisteredMember } from '@/hooks/useActivities';
 
 export default function Meetings() {
-  const { meetings, isLoading, createMeeting, deleteMeeting } = useMeetings();
+  const { meetings, isLoading, createMeeting, deleteMeeting, fetchMeetingAttendees } = useMeetings();
   const { isAdminOrCoordinator } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewAttendeesDialog, setViewAttendeesDialog] = useState<string | null>(null);
+  const [attendees, setAttendees] = useState<MeetingAttendee[]>([]);
+  const [isLoadingAttendees, setIsLoadingAttendees] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     meeting_date: '',
@@ -22,6 +27,33 @@ export default function Meetings() {
     location: '',
     agenda: '',
   });
+
+  // Fetch attendees when dialog opens
+  useEffect(() => {
+    if (viewAttendeesDialog) {
+      setIsLoadingAttendees(true);
+      fetchMeetingAttendees(viewAttendeesDialog).then((data) => {
+        setAttendees(data);
+        setIsLoadingAttendees(false);
+      });
+    } else {
+      setAttendees([]);
+    }
+  }, [viewAttendeesDialog]);
+
+  // Convert attendees to RegisteredMember format for the list component
+  const attendeesAsMembers: RegisteredMember[] = attendees.map(a => ({
+    id: a.id,
+    user_id: a.user_id,
+    uid: a.uid,
+    first_name: a.first_name,
+    last_name: a.last_name,
+    enrollment_number: a.enrollment_number,
+    whatsapp_number: a.whatsapp_number,
+    college_name: a.college_name,
+    current_semester: a.current_semester,
+    registered_at: a.marked_at,
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,20 +174,35 @@ export default function Meetings() {
                               {meeting.location}
                             </div>
                           )}
+                          <div className="flex items-center gap-1.5">
+                            <Users className="h-4 w-4" />
+                            {meeting.attendee_count || 0} attendees
+                          </div>
                         </div>
                         {meeting.agenda && (
                           <p className="mt-3 text-foreground/80">{meeting.agenda}</p>
                         )}
                       </div>
-                      {isAdminOrCoordinator && (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => deleteMeeting.mutate(meeting.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {isAdminOrCoordinator && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="icon-sm"
+                              onClick={() => setViewAttendeesDialog(meeting.id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => deleteMeeting.mutate(meeting.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -178,14 +225,27 @@ export default function Meetings() {
                         <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                           <span>{format(new Date(meeting.meeting_date), 'MMM d, yyyy')}</span>
                           {meeting.location && <span>• {meeting.location}</span>}
+                          <span>• {meeting.attendee_count || 0} attended</span>
                         </div>
                       </div>
-                      {meeting.mom_url && (
-                        <Button variant="outline" size="sm">
-                          <FileText className="h-4 w-4 mr-2" />
-                          View MoM
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {isAdminOrCoordinator && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setViewAttendeesDialog(meeting.id)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Attendees
+                          </Button>
+                        )}
+                        {meeting.mom_url && (
+                          <Button variant="outline" size="sm">
+                            <FileText className="h-4 w-4 mr-2" />
+                            View MoM
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -193,6 +253,23 @@ export default function Meetings() {
             </div>
           </div>
         )}
+
+        {/* View Attendees Dialog */}
+        <Dialog open={!!viewAttendeesDialog} onOpenChange={(open) => !open && setViewAttendeesDialog(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Meeting Attendees</DialogTitle>
+              <DialogDescription>
+                {meetings.find(m => m.id === viewAttendeesDialog)?.title}
+              </DialogDescription>
+            </DialogHeader>
+            <RegisteredMembersList 
+              members={attendeesAsMembers} 
+              isLoading={isLoadingAttendees}
+              title="Attendees"
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
