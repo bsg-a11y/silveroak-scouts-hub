@@ -88,6 +88,45 @@ export type Database = {
           },
         ]
       }
+      activity_suggestions: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_date: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_date?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_date?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           attachment_url: string | null

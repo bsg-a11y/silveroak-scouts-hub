@@ -16,7 +16,8 @@ import {
   X,
   LogOut,
   CalendarDays,
-  Bell
+  Bell,
+  Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,10 +35,11 @@ const mainNavItems = [
   { icon: Calendar, label: 'Activities', path: '/activities' },
   { icon: Megaphone, label: 'Announcements', path: '/announcements' },
   { icon: CalendarDays, label: 'Meetings', path: '/meetings' },
-  { icon: ClipboardList, label: 'Attendance', path: '/attendance', adminOnly: true },
+  { icon: ClipboardList, label: 'Attendance', path: '/attendance' },
   { icon: FileText, label: 'Leave Requests', path: '/leaves' },
   { icon: PackageSearch, label: 'Inventory', path: '/inventory', adminOnly: true },
   { icon: Award, label: 'Certificates', path: '/certificates' },
+  { icon: Lightbulb, label: 'Suggestions', path: '/suggestions' },
 ];
 
 const bottomNavItems = [

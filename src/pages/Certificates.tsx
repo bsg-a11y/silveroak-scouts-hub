@@ -4,24 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Award, Trash2, Search, Check, X, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCertificates } from '@/hooks/useCertificates';
 import { useCertificateRequests } from '@/hooks/useCertificateRequests';
 import { useMembers } from '@/hooks/useMembers';
+import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
 import { SecureDownloadButton } from '@/components/SecureDownloadButton';
 
 export default function Certificates() {
   const { certificates, isLoading, createCertificate, deleteCertificate } = useCertificates();
-  const { requests, isLoading: requestsLoading, updateRequest } = useCertificateRequests();
+  const { requests, isLoading: requestsLoading, createRequest, updateRequest } = useCertificateRequests();
   const { members } = useMembers();
-  const { isAdminOrCoordinator } = useAuth();
+  const { activities } = useActivities();
+  const { isAdminOrCoordinator, user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewDialog, setReviewDialog] = useState<{ id: string; status: string } | null>(null);
   const [adminComment, setAdminComment] = useState('');
@@ -32,12 +36,24 @@ export default function Certificates() {
     issue_date: '',
     certificate_url: '',
   });
+  const [requestData, setRequestData] = useState({
+    activity_id: '',
+    reason: '',
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await createCertificate.mutateAsync(formData);
     setFormData({ name: '', event_name: '', user_id: '', issue_date: '', certificate_url: '' });
     setIsDialogOpen(false);
+  };
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestData.activity_id || !requestData.reason.trim()) return;
+    await createRequest.mutateAsync(requestData);
+    setRequestData({ activity_id: '', reason: '' });
+    setIsRequestDialogOpen(false);
   };
 
   const handleReview = async () => {
@@ -59,8 +75,17 @@ export default function Certificates() {
     cert.profile?.uid?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Filter to show only user's own certificates if not admin
+  const displayCertificates = isAdminOrCoordinator 
+    ? filteredCertificates 
+    : filteredCertificates.filter(c => c.user_id === user?.id);
+
   const pendingRequests = requests.filter(r => r.status === 'pending');
   const processedRequests = requests.filter(r => r.status !== 'pending');
+  const myRequests = requests.filter(r => r.user_id === user?.id);
+
+  // Get completed activities for certificate request
+  const completedActivities = activities.filter(a => a.status === 'completed');
 
   if (isLoading) {
     return (
@@ -80,64 +105,132 @@ export default function Certificates() {
             <h1 className="text-2xl md:text-3xl font-bold font-display text-foreground">Certificates</h1>
             <p className="text-muted-foreground mt-1">Manage member certificates and achievements</p>
           </div>
-          {isAdminOrCoordinator && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Issue Certificate
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Issue New Certificate</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <Input
-                    placeholder="Certificate Name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                  <Input
-                    placeholder="Event Name"
-                    value={formData.event_name}
-                    onChange={(e) => setFormData({ ...formData, event_name: e.target.value })}
-                    required
-                  />
-                  <Select
-                    value={formData.user_id}
-                    onValueChange={(v) => setFormData({ ...formData, user_id: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {members.map((m) => (
-                        <SelectItem key={m.id} value={m.user_id}>
-                          {m.first_name} {m.last_name} ({m.uid})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="date"
-                    value={formData.issue_date}
-                    onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-                    required
-                  />
-                  <Input
-                    placeholder="Certificate URL (optional)"
-                    value={formData.certificate_url}
-                    onChange={(e) => setFormData({ ...formData, certificate_url: e.target.value })}
-                  />
-                  <Button type="submit" className="w-full" disabled={createCertificate.isPending}>
-                    {createCertificate.isPending ? 'Issuing...' : 'Issue Certificate'}
+          <div className="flex gap-2">
+            {/* Request Certificate Button for non-admins */}
+            {!isAdminOrCoordinator && (
+              <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Request Certificate
                   </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Request Certificate</DialogTitle>
+                    <DialogDescription>
+                      Request a certificate for a completed activity
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleRequestSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Select Activity</Label>
+                      <Select
+                        value={requestData.activity_id}
+                        onValueChange={(v) => setRequestData({ ...requestData, activity_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose an activity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {completedActivities.map((activity) => (
+                            <SelectItem key={activity.id} value={activity.id}>
+                              {activity.name} - {format(new Date(activity.activity_date), 'MMM d, yyyy')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reason for Request</Label>
+                      <Textarea
+                        value={requestData.reason}
+                        onChange={(e) => setRequestData({ ...requestData, reason: e.target.value })}
+                        placeholder="Explain why you need this certificate..."
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" type="button" onClick={() => setIsRequestDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createRequest.isPending || !requestData.activity_id}>
+                        {createRequest.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Submitting...
+                          </>
+                        ) : (
+                          'Submit Request'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Issue Certificate Button for admins */}
+            {isAdminOrCoordinator && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Issue Certificate
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Issue New Certificate</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <Input
+                      placeholder="Certificate Name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                    <Input
+                      placeholder="Event Name"
+                      value={formData.event_name}
+                      onChange={(e) => setFormData({ ...formData, event_name: e.target.value })}
+                      required
+                    />
+                    <Select
+                      value={formData.user_id}
+                      onValueChange={(v) => setFormData({ ...formData, user_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select member" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {members.map((m) => (
+                          <SelectItem key={m.id} value={m.user_id}>
+                            {m.first_name} {m.last_name} ({m.uid})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="date"
+                      value={formData.issue_date}
+                      onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                      required
+                    />
+                    <Input
+                      placeholder="Certificate URL (optional)"
+                      value={formData.certificate_url}
+                      onChange={(e) => setFormData({ ...formData, certificate_url: e.target.value })}
+                    />
+                    <Button type="submit" className="w-full" disabled={createCertificate.isPending}>
+                      {createCertificate.isPending ? 'Issuing...' : 'Issue Certificate'}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -154,17 +247,23 @@ export default function Certificates() {
         {/* Tabs for Certificates and Requests */}
         <Tabs defaultValue="certificates" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="certificates">Certificates ({certificates.length})</TabsTrigger>
-            {isAdminOrCoordinator && (
+            <TabsTrigger value="certificates">
+              {isAdminOrCoordinator ? `Certificates (${certificates.length})` : `My Certificates (${displayCertificates.length})`}
+            </TabsTrigger>
+            {isAdminOrCoordinator ? (
               <TabsTrigger value="requests">
                 Requests ({pendingRequests.length} pending)
+              </TabsTrigger>
+            ) : (
+              <TabsTrigger value="my-requests">
+                My Requests ({myRequests.length})
               </TabsTrigger>
             )}
           </TabsList>
 
           <TabsContent value="certificates">
             {/* Certificates Grid */}
-            {filteredCertificates.length === 0 ? (
+            {displayCertificates.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
                   {searchQuery ? 'No certificates found matching your search' : 'No certificates issued yet'}
@@ -172,7 +271,7 @@ export default function Certificates() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredCertificates.map((cert, index) => (
+                {displayCertificates.map((cert, index) => (
                   <Card 
                     key={cert.id} 
                     className="animate-slide-up"
@@ -230,6 +329,7 @@ export default function Certificates() {
             )}
           </TabsContent>
 
+          {/* Admin Requests Tab */}
           {isAdminOrCoordinator && (
             <TabsContent value="requests" className="space-y-4">
               {/* Pending Requests */}
@@ -319,6 +419,58 @@ export default function Certificates() {
                     ))}
                   </div>
                 </>
+              )}
+            </TabsContent>
+          )}
+
+          {/* Non-admin My Requests Tab */}
+          {!isAdminOrCoordinator && (
+            <TabsContent value="my-requests" className="space-y-4">
+              {myRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>You haven't submitted any certificate requests yet.</p>
+                    <Button variant="link" onClick={() => setIsRequestDialogOpen(true)}>
+                      Request your first certificate
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {myRequests.map((req) => (
+                    <Card key={req.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Award className="h-5 w-5 text-primary" />
+                              <h4 className="font-medium">{req.activity?.name}</h4>
+                              <Badge variant={
+                                req.status === 'approved' ? 'success' : 
+                                req.status === 'rejected' ? 'danger' : 'warning'
+                              }>
+                                {req.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-1">
+                              Reason: {req.reason}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Requested: {format(new Date(req.created_at), 'MMM d, yyyy')}
+                            </p>
+                            {req.admin_comment && (
+                              <div className="mt-2 p-2 bg-muted rounded-lg">
+                                <p className="text-sm font-medium">Admin Response:</p>
+                                <p className="text-sm text-muted-foreground">{req.admin_comment}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </TabsContent>
           )}

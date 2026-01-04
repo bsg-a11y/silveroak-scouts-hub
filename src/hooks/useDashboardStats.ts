@@ -32,15 +32,17 @@ export function useDashboardStats() {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Fetch members count
+      // Fetch members count (excluding program officer)
       const { count: totalMembers } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .neq('is_program_officer', true);
 
       const { count: activeMembers } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .neq('is_program_officer', true);
 
       // Fetch upcoming activities count
       const { count: upcomingActivities } = await supabase
