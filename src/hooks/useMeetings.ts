@@ -12,6 +12,21 @@ export interface Meeting {
   mom_url: string | null;
   created_by: string | null;
   created_at: string;
+  attendee_count?: number;
+}
+
+export interface MeetingAttendee {
+  id: string;
+  user_id: string;
+  uid: string;
+  first_name: string;
+  last_name: string;
+  enrollment_number: string | null;
+  whatsapp_number: string | null;
+  college_name: string | null;
+  current_semester: number | null;
+  marked_at: string;
+  status: string;
 }
 
 export function useMeetings() {
@@ -21,13 +36,28 @@ export function useMeetings() {
   const { data: meetings = [], isLoading } = useQuery({
     queryKey: ['meetings'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: meetingsData, error } = await supabase
         .from('meetings')
         .select('*')
         .order('meeting_date', { ascending: false });
 
       if (error) throw error;
-      return data as Meeting[];
+
+      // Get attendee counts
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('meeting_id')
+        .not('meeting_id', 'is', null);
+
+      const meetingsWithCounts = (meetingsData || []).map(meeting => {
+        const count = attendanceData?.filter(a => a.meeting_id === meeting.id).length || 0;
+        return {
+          ...meeting,
+          attendee_count: count,
+        };
+      });
+
+      return meetingsWithCounts as Meeting[];
     },
   });
 
@@ -66,5 +96,55 @@ export function useMeetings() {
     },
   });
 
-  return { meetings, isLoading, createMeeting, deleteMeeting };
+  const fetchMeetingAttendees = async (meetingId: string): Promise<MeetingAttendee[]> => {
+    try {
+      // First get attendance records
+      const { data: attendanceRecords, error: attError } = await supabase
+        .from('attendance')
+        .select('id, user_id, marked_at, status')
+        .eq('meeting_id', meetingId);
+
+      if (attError || !attendanceRecords) {
+        console.error('Error fetching attendance:', attError);
+        return [];
+      }
+
+      // Then get profiles for those users
+      const userIds = attendanceRecords.map(a => a.user_id);
+      if (userIds.length === 0) return [];
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, uid, first_name, last_name, enrollment_number, whatsapp_number, college_name, current_semester')
+        .in('user_id', userIds);
+
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+        return [];
+      }
+
+      // Combine the data
+      return attendanceRecords.map((att) => {
+        const profile = profiles?.find(p => p.user_id === att.user_id);
+        return {
+          id: att.id,
+          user_id: att.user_id,
+          marked_at: att.marked_at,
+          status: att.status,
+          uid: profile?.uid || 'N/A',
+          first_name: profile?.first_name || 'Unknown',
+          last_name: profile?.last_name || '',
+          enrollment_number: profile?.enrollment_number || null,
+          whatsapp_number: profile?.whatsapp_number || null,
+          college_name: profile?.college_name || null,
+          current_semester: profile?.current_semester || null,
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching meeting attendees:', error);
+      return [];
+    }
+  };
+
+  return { meetings, isLoading, createMeeting, deleteMeeting, fetchMeetingAttendees };
 }

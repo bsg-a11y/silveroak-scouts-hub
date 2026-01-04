@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,17 +35,22 @@ import {
   Loader2,
   Check,
   X,
+  Eye,
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useActivities, CreateActivityData } from '@/hooks/useActivities';
+import { useActivities, CreateActivityData, RegisteredMember } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
+import { RegisteredMembersList } from '@/components/RegisteredMembersList';
 
 export default function Activities() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [viewRegistrationsDialog, setViewRegistrationsDialog] = useState<string | null>(null);
+  const [registeredMembers, setRegisteredMembers] = useState<RegisteredMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [formData, setFormData] = useState<CreateActivityData>({
     name: '',
     description: '',
@@ -56,8 +61,21 @@ export default function Activities() {
     registration_enabled: true,
   });
 
-  const { activities, isLoading, createActivity, registerForActivity, unregisterFromActivity } = useActivities();
+  const { activities, isLoading, createActivity, registerForActivity, unregisterFromActivity, fetchRegisteredMembers } = useActivities();
   const { isAdminOrCoordinator, user } = useAuth();
+
+  // Fetch registered members when dialog opens
+  useEffect(() => {
+    if (viewRegistrationsDialog) {
+      setIsLoadingMembers(true);
+      fetchRegisteredMembers(viewRegistrationsDialog).then((members) => {
+        setRegisteredMembers(members);
+        setIsLoadingMembers(false);
+      });
+    } else {
+      setRegisteredMembers([]);
+    }
+  }, [viewRegistrationsDialog]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -347,32 +365,61 @@ export default function Activities() {
                         {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''} registered
                       </div>
                     </div>
-                    {user && (
-                      <Button 
-                        size="sm" 
-                        variant={activity.is_registered ? "outline" : "secondary"} 
-                        className="w-full mt-3"
-                        onClick={() => handleRegister(activity.id, activity.is_registered || false)}
-                      >
-                        {activity.is_registered ? (
-                          <>
-                            <X className="h-3 w-3 mr-1" />
-                            Unregister
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-3 w-3 mr-1" />
-                            Register
-                          </>
-                        )}
-                      </Button>
-                    )}
+                    <div className="flex gap-2 mt-3">
+                      {isAdminOrCoordinator && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setViewRegistrationsDialog(activity.id)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      )}
+                      {user && (
+                        <Button 
+                          size="sm" 
+                          variant={activity.is_registered ? "outline" : "secondary"} 
+                          className="flex-1"
+                          onClick={() => handleRegister(activity.id, activity.is_registered || false)}
+                        >
+                          {activity.is_registered ? (
+                            <>
+                              <X className="h-3 w-3 mr-1" />
+                              Unregister
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3 mr-1" />
+                              Register
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
             </CardContent>
           </Card>
         </div>
+
+        {/* View Registrations Dialog */}
+        <Dialog open={!!viewRegistrationsDialog} onOpenChange={(open) => !open && setViewRegistrationsDialog(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Registered Members</DialogTitle>
+              <DialogDescription>
+                {activities.find(a => a.id === viewRegistrationsDialog)?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <RegisteredMembersList 
+              members={registeredMembers} 
+              isLoading={isLoadingMembers}
+            />
+          </DialogContent>
+        </Dialog>
 
         {/* Activity List Tabs */}
         <Card>

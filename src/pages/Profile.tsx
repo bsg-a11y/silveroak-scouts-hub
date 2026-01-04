@@ -1,68 +1,171 @@
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SecureAvatar } from '@/components/SecureAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Pencil, 
   Phone,
-  Mail,
   Calendar,
   GraduationCap,
   Building,
   Shield,
   Award,
   ClipboardCheck,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { ROLE_LABELS, type UserRole } from '@/types';
+import { format } from 'date-fns';
 
-// Mock user profile data
-const mockProfile = {
-  uid: 'BSG001',
-  firstName: 'Rahul',
-  middleName: 'Kumar',
-  lastName: 'Sharma',
-  gender: 'male',
-  dateOfBirth: '2003-05-15',
-  courseDuration: '4 Years',
-  collegeName: 'Silver Oak University',
-  currentSemester: 5,
-  enrollmentNumber: 'SOU2022001',
-  classCoordinatorName: 'Dr. Amit Patel',
-  hodName: 'Prof. Sneha Mehta',
-  principalName: 'Dr. Rajesh Kumar',
-  whatsappNumber: '+91 98765 43210',
-  email: 'rahul.sharma@sou.edu.in',
-  bloodGroup: 'O+',
-  status: 'active',
-  role: 'member' as UserRole,
-  joinedDate: '2022-08-01',
-};
+interface FullProfile {
+  id: string;
+  user_id: string;
+  uid: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  gender: string | null;
+  date_of_birth: string | null;
+  course_duration: string | null;
+  college_name: string | null;
+  current_semester: number | null;
+  enrollment_number: string | null;
+  class_coordinator_name: string | null;
+  hod_name: string | null;
+  principal_name: string | null;
+  whatsapp_number: string | null;
+  blood_group: string | null;
+  profile_photo_url: string | null;
+  status: string;
+  created_at: string;
+}
 
-const mockActivityHistory = [
-  { id: 1, name: 'Tree Plantation Drive', date: '2024-11-15', attended: true },
-  { id: 2, name: 'First Aid Training', date: '2024-11-10', attended: true },
-  { id: 3, name: 'Community Service', date: '2024-10-28', attended: false },
-  { id: 4, name: 'Leadership Workshop', date: '2024-10-15', attended: true },
-];
+interface ActivityHistory {
+  id: string;
+  name: string;
+  activity_date: string;
+  attended: boolean;
+}
 
-const mockCertificates = [
-  { id: 1, name: 'Scout Basic Training', issuedDate: '2023-03-15', event: 'Basic Training Camp' },
-  { id: 2, name: 'First Aid Certificate', issuedDate: '2024-01-20', event: 'First Aid Training' },
-];
+interface Certificate {
+  id: string;
+  name: string;
+  event_name: string;
+  issue_date: string;
+}
 
-const mockLeaveHistory = [
-  { id: 1, from: '2024-11-01', to: '2024-11-02', reason: 'Family function', status: 'approved' },
-  { id: 2, from: '2024-10-15', to: '2024-10-15', reason: 'Medical appointment', status: 'approved' },
-];
+interface LeaveHistory {
+  id: string;
+  from_date: string;
+  to_date: string;
+  reason: string;
+  status: string;
+}
 
 export default function Profile() {
-  const fullName = `${mockProfile.firstName} ${mockProfile.middleName} ${mockProfile.lastName}`.trim();
-  const attendancePercentage = Math.round(
-    (mockActivityHistory.filter(a => a.attended).length / mockActivityHistory.length) * 100
-  );
+  const { user, profile: authProfile, roles } = useAuth();
+  const [fullProfile, setFullProfile] = useState<FullProfile | null>(null);
+  const [activityHistory, setActivityHistory] = useState<ActivityHistory[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+
+      setIsLoading(true);
+      try {
+        // Fetch full profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileData) {
+          setFullProfile(profileData);
+        }
+
+        // Fetch attendance records with activity details
+        const { data: attendanceData } = await supabase
+          .from('attendance')
+          .select(`
+            id,
+            status,
+            activity_id,
+            activities (
+              name,
+              activity_date
+            )
+          `)
+          .eq('user_id', user.id)
+          .not('activity_id', 'is', null)
+          .order('marked_at', { ascending: false });
+
+        if (attendanceData) {
+          const history = attendanceData
+            .filter(a => a.activities)
+            .map(a => ({
+              id: a.id,
+              name: (a.activities as any)?.name || 'Unknown Activity',
+              activity_date: (a.activities as any)?.activity_date || '',
+              attended: a.status === 'present',
+            }));
+          setActivityHistory(history);
+        }
+
+        // Fetch certificates
+        const { data: certsData } = await supabase
+          .from('certificates')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('issue_date', { ascending: false });
+
+        if (certsData) {
+          setCertificates(certsData);
+        }
+
+        // Fetch leave requests
+        const { data: leavesData } = await supabase
+          .from('leave_requests')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (leavesData) {
+          setLeaveHistory(leavesData);
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [user]);
+
+  if (isLoading || !fullProfile) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const fullName = `${fullProfile.first_name} ${fullProfile.middle_name || ''} ${fullProfile.last_name}`.trim();
+  const attendancePercentage = activityHistory.length > 0
+    ? Math.round((activityHistory.filter(a => a.attended).length / activityHistory.length) * 100)
+    : 0;
+  const userRole = (roles[0] || 'member') as UserRole;
 
   return (
     <DashboardLayout>
@@ -74,8 +177,8 @@ export default function Profile() {
               {/* Avatar & Basic Info */}
               <div className="flex flex-col items-center md:items-start">
                 <SecureAvatar
-                  src={null}
-                  fallback={`${mockProfile.firstName[0]}${mockProfile.lastName[0]}`}
+                  src={fullProfile.profile_photo_url}
+                  fallback={`${fullProfile.first_name[0]}${fullProfile.last_name[0]}`}
                   className="h-24 w-24 md:h-32 md:w-32"
                   fallbackClassName="bg-primary text-primary-foreground text-3xl font-display"
                 />
@@ -94,13 +197,13 @@ export default function Profile() {
                     </h1>
                     <div className="flex items-center gap-3 mt-2">
                       <code className="px-2 py-1 rounded bg-primary/10 text-primary text-sm font-mono font-medium">
-                        {mockProfile.uid}
+                        {fullProfile.uid}
                       </code>
-                      <Badge variant={mockProfile.status === 'active' ? 'active' : 'inactive'}>
-                        {mockProfile.status === 'active' ? 'Active Member' : 'Inactive'}
+                      <Badge variant={fullProfile.status === 'active' ? 'active' : 'inactive'}>
+                        {fullProfile.status === 'active' ? 'Active Member' : 'Inactive'}
                       </Badge>
                       <Badge variant="member">
-                        {ROLE_LABELS[mockProfile.role]}
+                        {ROLE_LABELS[userRole]}
                       </Badge>
                     </div>
                   </div>
@@ -117,7 +220,7 @@ export default function Profile() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
-                      <p className="text-sm font-medium">{mockProfile.whatsappNumber}</p>
+                      <p className="text-sm font-medium">{fullProfile.whatsapp_number || 'Not provided'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -126,7 +229,11 @@ export default function Profile() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Date of Birth</p>
-                      <p className="text-sm font-medium">{mockProfile.dateOfBirth}</p>
+                      <p className="text-sm font-medium">
+                        {fullProfile.date_of_birth 
+                          ? format(new Date(fullProfile.date_of_birth), 'dd MMM yyyy')
+                          : 'Not provided'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -135,7 +242,7 @@ export default function Profile() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Blood Group</p>
-                      <p className="text-sm font-medium">{mockProfile.bloodGroup}</p>
+                      <p className="text-sm font-medium">{fullProfile.blood_group || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>
@@ -166,7 +273,7 @@ export default function Profile() {
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{mockActivityHistory.length}</p>
+                  <p className="text-2xl font-bold font-display">{activityHistory.length}</p>
                   <p className="text-xs text-muted-foreground">Activities</p>
                 </div>
               </div>
@@ -179,7 +286,7 @@ export default function Profile() {
                   <Award className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{mockCertificates.length}</p>
+                  <p className="text-2xl font-bold font-display">{certificates.length}</p>
                   <p className="text-xs text-muted-foreground">Certificates</p>
                 </div>
               </div>
@@ -192,7 +299,7 @@ export default function Profile() {
                   <FileText className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{mockLeaveHistory.length}</p>
+                  <p className="text-2xl font-bold font-display">{leaveHistory.length}</p>
                   <p className="text-xs text-muted-foreground">Leaves Taken</p>
                 </div>
               </div>
@@ -222,19 +329,21 @@ export default function Profile() {
                     <div className="space-y-3">
                       <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Enrollment Number</span>
-                        <span className="font-medium">{mockProfile.enrollmentNumber}</span>
+                        <span className="font-medium">{fullProfile.enrollment_number || 'Not provided'}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Current Semester</span>
-                        <span className="font-medium">Semester {mockProfile.currentSemester}</span>
+                        <span className="font-medium">
+                          {fullProfile.current_semester ? `Semester ${fullProfile.current_semester}` : 'Not provided'}
+                        </span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Course Duration</span>
-                        <span className="font-medium">{mockProfile.courseDuration}</span>
+                        <span className="font-medium">{fullProfile.course_duration || 'Not provided'}</span>
                       </div>
                       <div className="flex justify-between py-2">
                         <span className="text-muted-foreground">College</span>
-                        <span className="font-medium">{mockProfile.collegeName}</span>
+                        <span className="font-medium">{fullProfile.college_name || 'Not provided'}</span>
                       </div>
                     </div>
                   </div>
@@ -246,15 +355,15 @@ export default function Profile() {
                     <div className="space-y-3">
                       <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Class Coordinator</span>
-                        <span className="font-medium">{mockProfile.classCoordinatorName}</span>
+                        <span className="font-medium">{fullProfile.class_coordinator_name || 'Not provided'}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">HOD</span>
-                        <span className="font-medium">{mockProfile.hodName}</span>
+                        <span className="font-medium">{fullProfile.hod_name || 'Not provided'}</span>
                       </div>
                       <div className="flex justify-between py-2">
                         <span className="text-muted-foreground">Principal</span>
-                        <span className="font-medium">{mockProfile.principalName}</span>
+                        <span className="font-medium">{fullProfile.principal_name || 'Not provided'}</span>
                       </div>
                     </div>
                   </div>
@@ -262,69 +371,94 @@ export default function Profile() {
               </TabsContent>
 
               <TabsContent value="activities" className="mt-0">
-                <div className="space-y-3">
-                  {mockActivityHistory.map((activity) => (
-                    <div 
-                      key={activity.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border/50"
-                    >
-                      <div>
-                        <p className="font-medium">{activity.name}</p>
-                        <p className="text-sm text-muted-foreground">{activity.date}</p>
+                {activityHistory.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No activity history found
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activityHistory.map((activity) => (
+                      <div 
+                        key={activity.id}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border/50"
+                      >
+                        <div>
+                          <p className="font-medium">{activity.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(activity.activity_date), 'dd MMM yyyy')}
+                          </p>
+                        </div>
+                        <Badge variant={activity.attended ? 'success' : 'danger'}>
+                          {activity.attended ? 'Present' : 'Absent'}
+                        </Badge>
                       </div>
-                      <Badge variant={activity.attended ? 'success' : 'danger'}>
-                        {activity.attended ? 'Present' : 'Absent'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="certificates" className="mt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockCertificates.map((cert) => (
-                    <Card key={cert.id} className="border-border/50">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-accent/10">
-                            <Award className="h-5 w-5 text-accent" />
+                {certificates.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No certificates earned yet
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {certificates.map((cert) => (
+                      <Card key={cert.id} className="border-border/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-accent/10">
+                              <Award className="h-5 w-5 text-accent" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium">{cert.name}</h4>
+                              <p className="text-sm text-muted-foreground">{cert.event_name}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Issued: {format(new Date(cert.issue_date), 'dd MMM yyyy')}
+                              </p>
+                            </div>
+                            <Button variant="outline" size="sm">
+                              Download
+                            </Button>
                           </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{cert.name}</h4>
-                            <p className="text-sm text-muted-foreground">{cert.event}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Issued: {cert.issuedDate}
-                            </p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Download
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="leaves" className="mt-0">
-                <div className="space-y-3">
-                  {mockLeaveHistory.map((leave) => (
-                    <div 
-                      key={leave.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border/50"
-                    >
-                      <div>
-                        <p className="font-medium">{leave.reason}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {leave.from} {leave.from !== leave.to && `to ${leave.to}`}
-                        </p>
+                {leaveHistory.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No leave history found
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {leaveHistory.map((leave) => (
+                      <div 
+                        key={leave.id}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border/50"
+                      >
+                        <div>
+                          <p className="font-medium">{leave.reason}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(leave.from_date), 'dd MMM yyyy')}
+                            {leave.from_date !== leave.to_date && 
+                              ` to ${format(new Date(leave.to_date), 'dd MMM yyyy')}`}
+                          </p>
+                        </div>
+                        <Badge variant={
+                          leave.status === 'approved' ? 'success' : 
+                          leave.status === 'rejected' ? 'danger' : 'warning'
+                        }>
+                          {leave.status}
+                        </Badge>
                       </div>
-                      <Badge variant={leave.status === 'approved' ? 'success' : 'warning'}>
-                        {leave.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
             </CardContent>
           </Tabs>

@@ -1,4 +1,5 @@
-import { Menu, Bell, Search, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, Bell, Search, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SecureAvatar } from '@/components/SecureAvatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROLE_LABELS, type UserRole } from '@/types';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -18,14 +21,25 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
-  // Mock user data - will be replaced with real auth data
-  const user = {
-    name: 'John Doe',
-    uid: 'BSG001',
-    role: 'Admin',
-    avatar: null,
+  const navigate = useNavigate();
+  const { profile, roles, signOut, isLoading } = useAuth();
+
+  const fullName = profile 
+    ? `${profile.first_name} ${profile.last_name}`.trim()
+    : 'Loading...';
+  
+  const initials = profile
+    ? `${profile.first_name[0]}${profile.last_name[0]}`
+    : '?';
+
+  const userRole = (roles[0] || 'member') as UserRole;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
   };
 
+  // Mock notifications - will be replaced with real data
   const notifications = [
     { id: 1, title: 'New activity registered', time: '5 min ago', unread: true },
     { id: 2, title: 'Leave request approved', time: '1 hour ago', unread: true },
@@ -98,7 +112,10 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-primary font-medium">
+            <DropdownMenuItem 
+              className="justify-center text-primary font-medium cursor-pointer"
+              onClick={() => navigate('/notifications')}
+            >
               View all notifications
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -109,32 +126,41 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-3 px-2">
               <SecureAvatar
-                src={user.avatar}
-                fallback={user.name.split(' ').map(n => n[0]).join('')}
+                src={profile?.profile_photo_url || null}
+                fallback={initials}
                 className="h-8 w-8"
                 fallbackClassName="bg-primary text-primary-foreground text-sm"
               />
               <div className="hidden lg:flex flex-col items-start">
-                <span className="text-sm font-medium">{user.name}</span>
-                <span className="text-xs text-muted-foreground">{user.uid}</span>
+                <span className="text-sm font-medium">{fullName}</span>
+                <span className="text-xs text-muted-foreground">{profile?.uid || 'Loading...'}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span>{user.name}</span>
-                <span className="text-xs font-normal text-muted-foreground">{user.uid}</span>
+                <span>{fullName}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {profile?.uid} • {ROLE_LABELS[userRole]}
+                </span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
               <User className="h-4 w-4 mr-2" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem 
+              className="text-destructive cursor-pointer"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
