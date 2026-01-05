@@ -77,6 +77,7 @@ export default function Members() {
   const [isResetting, setIsResetting] = useState(false);
   const [viewDetailsMember, setViewDetailsMember] = useState<{ id: string; user_id: string; uid: string; first_name: string; last_name: string } | null>(null);
   const [formData, setFormData] = useState<CreateMemberData>({
+    uid: '',
     first_name: '',
     last_name: '',
     middle_name: '',
@@ -136,6 +137,7 @@ export default function Members() {
     if (result.success) {
       setCreatedCredentials({ uid: result.uid!, password: result.password! });
       setFormData({
+        uid: '',
         first_name: '',
         last_name: '',
         middle_name: '',
@@ -281,10 +283,20 @@ export default function Members() {
                       <DialogHeader>
                         <DialogTitle>Add New Member</DialogTitle>
                         <DialogDescription>
-                          Fill in the member details. UID will be auto-generated.
+                          Fill in the member details. Leave UID empty to auto-generate, or enter a pre-assigned UID.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="uid">UID (Optional)</Label>
+                          <Input
+                            id="uid"
+                            value={formData.uid}
+                            onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
+                            placeholder="Leave empty to auto-generate (e.g., BSGSOU002)"
+                          />
+                          <p className="text-xs text-muted-foreground">Format: BSGSOU + 3 digits</p>
+                        </div>
                         <div className="space-y-2">
                           <Label htmlFor="first_name">First Name *</Label>
                           <Input
