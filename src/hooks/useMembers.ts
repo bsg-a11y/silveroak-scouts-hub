@@ -30,6 +30,7 @@ export interface Member {
 }
 
 export interface CreateMemberData {
+  uid?: string; // Optional custom UID
   first_name: string;
   middle_name?: string;
   last_name: string;
@@ -131,6 +132,7 @@ export function useMembers() {
       // Call edge function to create member (uses service role, preserves admin session)
       const response = await supabase.functions.invoke('create-member', {
         body: {
+          uid: data.uid || null, // Pass optional custom UID
           first_name: validatedData.first_name,
           middle_name: validatedData.middle_name || null,
           last_name: validatedData.last_name,

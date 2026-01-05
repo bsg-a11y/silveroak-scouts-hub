@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 interface CreateMemberRequest {
+  uid?: string; // Optional custom UID
   first_name: string;
   middle_name?: string;
   last_name: string;
@@ -82,19 +83,64 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate next UID (validated against the caller's role)
-    const { data: uidData, error: uidError } = await adminClient.rpc("generate_next_uid_for", {
-      _caller: callerUser.id,
-    });
-    if (uidError) {
-      console.error("UID generation error:", uidError);
-      return new Response(
-        JSON.stringify({ error: uidError.message }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let uid: string;
+
+    // Handle UID: either use provided custom UID or auto-generate
+    if (body.uid && body.uid.trim() !== "") {
+      const customUid = body.uid.trim().toUpperCase();
+      
+      // Validate format: BSGSOU + 3 digits
+      if (!/^BSGSOU\d{3}$/.test(customUid)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid UID format. Must be BSGSOU followed by 3 digits (e.g., BSGSOU002)" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Check if UID already exists in profiles
+      const { data: existingProfile } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("uid", customUid)
+        .maybeSingle();
+        
+      if (existingProfile) {
+        return new Response(
+          JSON.stringify({ error: "This UID is already in use" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Check if corresponding email exists in auth.users
+      const emailToCheck = `${customUid.toLowerCase()}@bsg.local`;
+      const { data: authUsers } = await adminClient.auth.admin.listUsers();
+      const existingAuthUser = authUsers?.users?.find(u => u.email === emailToCheck);
+      
+      if (existingAuthUser) {
+        return new Response(
+          JSON.stringify({ error: "This UID is already registered in the system" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      uid = customUid;
+      console.log(`Using custom UID: ${uid}`);
+    } else {
+      // Auto-generate UID using database function
+      const { data: uidData, error: uidError } = await adminClient.rpc("generate_next_uid_for", {
+        _caller: callerUser.id,
+      });
+      if (uidError) {
+        console.error("UID generation error:", uidError);
+        return new Response(
+          JSON.stringify({ error: uidError.message }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      uid = uidData as string;
+      console.log(`Auto-generated UID: ${uid}`);
     }
 
-    const uid = uidData as string;
     const email = `${uid.toLowerCase()}@bsg.local`;
 
     // Generate secure password
