@@ -31,6 +31,7 @@ export interface Member {
 
 export interface CreateMemberData {
   uid?: string; // Optional custom UID
+  password?: string; // Optional custom password
   first_name: string;
   middle_name?: string;
   last_name: string;
@@ -133,6 +134,7 @@ export function useMembers() {
       const response = await supabase.functions.invoke('create-member', {
         body: {
           uid: data.uid || null, // Pass optional custom UID
+          password: data.password || null, // Pass optional custom password
           first_name: validatedData.first_name,
           middle_name: validatedData.middle_name || null,
           last_name: validatedData.last_name,
