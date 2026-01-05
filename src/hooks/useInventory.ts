@@ -96,6 +96,45 @@ export function useInventory() {
     },
   });
 
+  const updateResource = useMutation({
+    mutationFn: async ({ id, ...resource }: { id: string } & Partial<Omit<Resource, 'id' | 'created_at' | 'updated_at'>>) => {
+      const { data, error } = await supabase
+        .from('resources')
+        .update(resource)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast({ title: 'Success', description: 'Resource updated successfully' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteResource = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast({ title: 'Success', description: 'Resource deleted successfully' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const assignResource = useMutation({
     mutationFn: async (assignment: { resource_id: string; user_id: string; quantity: number }) => {
       // First update available quantity
@@ -161,5 +200,5 @@ export function useInventory() {
     },
   });
 
-  return { resources, assignments, isLoading, assignmentsLoading, createResource, assignResource, returnResource };
+  return { resources, assignments, isLoading, assignmentsLoading, createResource, updateResource, deleteResource, assignResource, returnResource };
 }

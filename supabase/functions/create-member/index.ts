@@ -13,6 +13,7 @@ interface CreateMemberRequest {
   last_name: string;
   gender?: string;
   date_of_birth?: string;
+  email?: string;
   course_duration?: string;
   college_name?: string;
   current_semester?: number;
@@ -204,6 +205,7 @@ Deno.serve(async (req) => {
       last_name: body.last_name,
       gender: body.gender || null,
       date_of_birth: body.date_of_birth || null,
+      email: body.email || null,
       course_duration: body.course_duration || null,
       college_name: body.college_name || "Silver Oak University",
       current_semester: body.current_semester || null,

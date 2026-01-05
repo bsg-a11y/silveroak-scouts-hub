@@ -27,6 +27,7 @@ export interface Member {
   created_at: string;
   updated_at: string;
   role?: string;
+  email?: string | null;
 }
 
 export interface CreateMemberData {
@@ -37,6 +38,7 @@ export interface CreateMemberData {
   last_name: string;
   gender?: string;
   date_of_birth?: string;
+  email?: string;
   course_duration?: string;
   college_name?: string;
   current_semester?: number;
@@ -140,6 +142,7 @@ export function useMembers() {
           last_name: validatedData.last_name,
           gender: validatedData.gender || null,
           date_of_birth: validatedData.date_of_birth || null,
+          email: validatedData.email || null,
           course_duration: validatedData.course_duration || null,
           college_name: validatedData.college_name || 'Silver Oak University',
           current_semester: validatedData.current_semester || null,
@@ -182,25 +185,29 @@ export function useMembers() {
 
   const updateMember = async (id: string, data: Partial<CreateMemberData>) => {
     try {
+      const updateData: Record<string, any> = {};
+      
+      // Only include fields that are defined
+      if (data.first_name !== undefined) updateData.first_name = data.first_name;
+      if (data.middle_name !== undefined) updateData.middle_name = data.middle_name;
+      if (data.last_name !== undefined) updateData.last_name = data.last_name;
+      if (data.gender !== undefined) updateData.gender = data.gender;
+      if (data.date_of_birth !== undefined) updateData.date_of_birth = data.date_of_birth;
+      if (data.email !== undefined) updateData.email = data.email;
+      if (data.course_duration !== undefined) updateData.course_duration = data.course_duration;
+      if (data.college_name !== undefined) updateData.college_name = data.college_name;
+      if (data.current_semester !== undefined) updateData.current_semester = data.current_semester;
+      if (data.enrollment_number !== undefined) updateData.enrollment_number = data.enrollment_number;
+      if (data.class_coordinator_name !== undefined) updateData.class_coordinator_name = data.class_coordinator_name;
+      if (data.hod_name !== undefined) updateData.hod_name = data.hod_name;
+      if (data.principal_name !== undefined) updateData.principal_name = data.principal_name;
+      if (data.whatsapp_number !== undefined) updateData.whatsapp_number = data.whatsapp_number;
+      if (data.aadhaar_number !== undefined) updateData.aadhaar_number = data.aadhaar_number;
+      if (data.blood_group !== undefined) updateData.blood_group = data.blood_group;
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: data.first_name,
-          middle_name: data.middle_name,
-          last_name: data.last_name,
-          gender: data.gender,
-          date_of_birth: data.date_of_birth,
-          course_duration: data.course_duration,
-          college_name: data.college_name,
-          current_semester: data.current_semester,
-          enrollment_number: data.enrollment_number,
-          class_coordinator_name: data.class_coordinator_name,
-          hod_name: data.hod_name,
-          principal_name: data.principal_name,
-          whatsapp_number: data.whatsapp_number,
-          aadhaar_number: data.aadhaar_number,
-          blood_group: data.blood_group,
-        })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;

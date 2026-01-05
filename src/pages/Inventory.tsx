@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Package, Users, Undo2 } from 'lucide-react';
+import { Plus, Package, Users, Undo2, Pencil, Trash2 } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const CATEGORIES = ['Uniform', 'Badge', 'Scarf', 'Equipment', 'Stationery', 'Other'];
 
 export default function Inventory() {
-  const { resources, assignments, isLoading, createResource, assignResource, returnResource } = useInventory();
+  const { resources, assignments, isLoading, createResource, updateResource, deleteResource, assignResource, returnResource } = useInventory();
   const { members } = useMembers();
   const { isAdminOrCoordinator } = useAuth();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -217,9 +217,21 @@ export default function Inventory() {
                               <h3 className="font-medium text-foreground">{resource.name}</h3>
                               <p className="text-sm text-muted-foreground">{resource.unit}</p>
                             </div>
-                            <Badge variant={resource.available_quantity > 0 ? 'success' : 'danger'}>
-                              {resource.available_quantity > 0 ? 'In Stock' : 'Out of Stock'}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={resource.available_quantity > 0 ? 'success' : 'danger'}>
+                                {resource.available_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                              </Badge>
+                              {isAdminOrCoordinator && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="text-destructive"
+                                  onClick={() => deleteResource.mutate(resource.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           <div className="mt-4 flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Available</span>

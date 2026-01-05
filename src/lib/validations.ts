@@ -27,6 +27,7 @@ export const memberSchema = z.object({
   last_name: z.string().trim().min(1, 'Last name is required').max(50, 'Last name must be less than 50 characters'),
   gender: z.enum(['male', 'female', 'other']).optional().nullable(),
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format').optional().nullable().or(z.literal('')),
+  email: z.string().email('Invalid email format').optional().nullable().or(z.literal('')),
   course_duration: z.string().max(50).optional().nullable().or(z.literal('')),
   college_name: z.string().max(200).optional().nullable().or(z.literal('')),
   current_semester: z.number().int().min(1).max(12).optional().nullable(),
