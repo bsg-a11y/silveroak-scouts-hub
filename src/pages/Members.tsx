@@ -78,6 +78,7 @@ export default function Members() {
   const [viewDetailsMember, setViewDetailsMember] = useState<{ id: string; user_id: string; uid: string; first_name: string; last_name: string } | null>(null);
   const [formData, setFormData] = useState<CreateMemberData>({
     uid: '',
+    password: '',
     first_name: '',
     last_name: '',
     middle_name: '',
@@ -138,6 +139,7 @@ export default function Members() {
       setCreatedCredentials({ uid: result.uid!, password: result.password! });
       setFormData({
         uid: '',
+        password: '',
         first_name: '',
         last_name: '',
         middle_name: '',
@@ -283,19 +285,30 @@ export default function Members() {
                       <DialogHeader>
                         <DialogTitle>Add New Member</DialogTitle>
                         <DialogDescription>
-                          Fill in the member details. Leave UID empty to auto-generate, or enter a pre-assigned UID.
+                          Fill in the member details. Leave UID and Password empty to auto-generate, or enter pre-assigned values.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                        <div className="space-y-2 md:col-span-2">
+                        <div className="space-y-2">
                           <Label htmlFor="uid">UID (Optional)</Label>
                           <Input
                             id="uid"
                             value={formData.uid}
                             onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
-                            placeholder="Leave empty to auto-generate (e.g., BSGSOU002)"
+                            placeholder="e.g., BSGSOU002"
                           />
                           <p className="text-xs text-muted-foreground">Format: BSGSOU + 3 digits</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="password">Password (Optional)</Label>
+                          <Input
+                            id="password"
+                            type="text"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="Leave empty to auto-generate"
+                          />
+                          <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="first_name">First Name *</Label>

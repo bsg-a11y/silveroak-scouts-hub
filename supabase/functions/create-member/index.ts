@@ -7,6 +7,7 @@ const corsHeaders = {
 
 interface CreateMemberRequest {
   uid?: string; // Optional custom UID
+  password?: string; // Optional custom password
   first_name: string;
   middle_name?: string;
   last_name: string;
@@ -143,11 +144,30 @@ Deno.serve(async (req) => {
 
     const email = `${uid.toLowerCase()}@bsg.local`;
 
-    // Generate secure password
-    const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    const randomValues = new Uint32Array(16);
-    crypto.getRandomValues(randomValues);
-    const password = Array.from(randomValues, (v) => charset[v % charset.length]).join("");
+    // Handle password: either use provided custom password or auto-generate
+    let password: string;
+
+    if (body.password && body.password.trim() !== "") {
+      const customPassword = body.password.trim();
+      
+      // Validate minimum length
+      if (customPassword.length < 6) {
+        return new Response(
+          JSON.stringify({ error: "Password must be at least 6 characters" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      password = customPassword;
+      console.log("Using custom password");
+    } else {
+      // Auto-generate secure password
+      const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+      const randomValues = new Uint32Array(16);
+      crypto.getRandomValues(randomValues);
+      password = Array.from(randomValues, (v) => charset[v % charset.length]).join("");
+      console.log("Auto-generated password");
+    }
 
     // Create auth user with service role (bypasses signUp session switch issue)
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
