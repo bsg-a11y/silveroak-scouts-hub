@@ -20,6 +20,8 @@ import Certificates from "./pages/Certificates";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Suggestions from "./pages/Suggestions";
+import OurTeam from "./pages/OurTeam";
+import FacultyDashboard from "./pages/FacultyDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +38,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
+            <Route path="/our-team" element={<ProtectedRoute><OurTeam /></ProtectedRoute>} />
             <Route path="/activities" element={<ProtectedRoute><Activities /></ProtectedRoute>} />
             <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -47,6 +50,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
+            <Route path="/faculty-dashboard" element={<ProtectedRoute requiredRoles={['faculty_coordinator']}><FacultyDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

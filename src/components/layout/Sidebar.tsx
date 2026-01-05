@@ -17,7 +17,8 @@ import {
   LogOut,
   CalendarDays,
   Bell,
-  Lightbulb
+  Lightbulb,
+  UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ interface SidebarProps {
 const mainNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Members', path: '/members', adminOnly: true },
+  { icon: UsersRound, label: 'Our Team', path: '/our-team' },
   { icon: Calendar, label: 'Activities', path: '/activities' },
   { icon: Megaphone, label: 'Announcements', path: '/announcements' },
   { icon: CalendarDays, label: 'Meetings', path: '/meetings' },
@@ -51,7 +53,7 @@ const bottomNavItems = [
 export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdminOrCoordinator } = useAuth();
+  const { signOut, isAdminOrCoordinator, isFacultyCoordinator } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -61,9 +63,17 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
   };
 
   // Filter nav items based on role
-  const filteredMainNavItems = mainNavItems.filter(
+  let filteredMainNavItems = mainNavItems.filter(
     item => !item.adminOnly || isAdminOrCoordinator
   );
+
+  // For faculty coordinators, show only limited items
+  if (isFacultyCoordinator && !isAdminOrCoordinator) {
+    filteredMainNavItems = [
+      { icon: LayoutDashboard, label: 'Faculty Dashboard', path: '/faculty-dashboard' },
+      { icon: UsersRound, label: 'Our Team', path: '/our-team' },
+    ];
+  }
 
   const filteredBottomNavItems = bottomNavItems.filter(
     item => !item.adminOnly || isAdminOrCoordinator

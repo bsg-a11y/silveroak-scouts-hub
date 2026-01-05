@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type UserRole = 'admin' | 'coordinator' | 'executive' | 'core' | 'member';
+type UserRole = 'admin' | 'coordinator' | 'executive' | 'core' | 'member' | 'faculty_coordinator';
 
 interface Profile {
   id: string;
@@ -15,6 +15,7 @@ interface Profile {
   gender: string | null;
   profile_photo_url: string | null;
   status: string;
+  faculty_college_id: string | null;
 }
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   isAdminOrCoordinator: boolean;
+  isFacultyCoordinator: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithUid: (uid: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -167,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = roles.includes('admin');
   const isAdminOrCoordinator = roles.includes('admin') || roles.includes('coordinator');
+  const isFacultyCoordinator = roles.includes('faculty_coordinator');
 
   return (
     <AuthContext.Provider value={{
@@ -177,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isAdmin,
       isAdminOrCoordinator,
+      isFacultyCoordinator,
       signIn,
       signInWithUid,
       signOut,
