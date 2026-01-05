@@ -59,6 +59,42 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_departments: {
+        Row: {
+          activity_id: string
+          created_at: string
+          department_id: string
+          id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          department_id: string
+          id?: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          department_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_departments_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "committee_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_registrations: {
         Row: {
           activity_id: string
@@ -282,6 +318,98 @@ export type Database = {
         }
         Relationships: []
       }
+      colleges: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          short_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          short_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          short_code?: string
+        }
+        Relationships: []
+      }
+      committee_departments: {
+        Row: {
+          committee_type: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+        }
+        Insert: {
+          committee_type: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          committee_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      committee_positions: {
+        Row: {
+          created_at: string
+          department_id: string | null
+          display_order: number
+          email: string | null
+          id: string
+          phone: string | null
+          position_title: string | null
+          position_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id?: string | null
+          display_order?: number
+          email?: string | null
+          id?: string
+          phone?: string | null
+          position_title?: string | null
+          position_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string | null
+          display_order?: number
+          email?: string | null
+          id?: string
+          phone?: string | null
+          position_title?: string | null
+          position_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_positions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "committee_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_requests: {
         Row: {
           admin_comment: string | null
@@ -399,6 +527,7 @@ export type Database = {
           date_of_birth: string | null
           employee_id: string | null
           enrollment_number: string | null
+          faculty_college_id: string | null
           first_name: string
           gender: string | null
           hod_name: string | null
@@ -425,6 +554,7 @@ export type Database = {
           date_of_birth?: string | null
           employee_id?: string | null
           enrollment_number?: string | null
+          faculty_college_id?: string | null
           first_name: string
           gender?: string | null
           hod_name?: string | null
@@ -451,6 +581,7 @@ export type Database = {
           date_of_birth?: string | null
           employee_id?: string | null
           enrollment_number?: string | null
+          faculty_college_id?: string | null
           first_name?: string
           gender?: string | null
           hod_name?: string | null
@@ -466,7 +597,15 @@ export type Database = {
           user_id?: string
           whatsapp_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_faculty_college_id_fkey"
+            columns: ["faculty_college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resource_assignments: {
         Row: {
@@ -636,8 +775,13 @@ export type Database = {
       }
     }
     Functions: {
+      generate_faculty_uid: {
+        Args: { _college_short_code: string }
+        Returns: string
+      }
       generate_next_uid: { Args: never; Returns: string }
       generate_next_uid_for: { Args: { _caller: string }; Returns: string }
+      get_faculty_college_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -646,9 +790,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_coordinator: { Args: { _user_id: string }; Returns: boolean }
+      is_faculty_coordinator: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      user_role: "admin" | "coordinator" | "executive" | "core" | "member"
+      user_role:
+        | "admin"
+        | "coordinator"
+        | "executive"
+        | "core"
+        | "member"
+        | "faculty_coordinator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -776,7 +927,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      user_role: ["admin", "coordinator", "executive", "core", "member"],
+      user_role: [
+        "admin",
+        "coordinator",
+        "executive",
+        "core",
+        "member",
+        "faculty_coordinator",
+      ],
     },
   },
 } as const

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { SecureAvatar } from '@/components/SecureAvatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -51,8 +52,10 @@ import {
   Loader2,
   Copy,
   Key,
+  GraduationCap,
 } from 'lucide-react';
 import { useMembers, CreateMemberData } from '@/hooks/useMembers';
+import { useColleges } from '@/hooks/useColleges';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { MemberDetailsDialog } from '@/components/MemberDetailsDialog';
@@ -63,6 +66,7 @@ const ROLE_LABELS: Record<string, string> = {
   executive: 'Executive',
   core: 'Core Committee',
   member: 'Member',
+  faculty_coordinator: 'Faculty Coordinator',
 };
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -70,8 +74,9 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [createdCredentials, setCreatedCredentials] = useState<{ uid: string; password: string } | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{ uid: string; password: string; college?: string } | null>(null);
   const [resetPasswordMember, setResetPasswordMember] = useState<{ id: string; userId: string; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
@@ -84,7 +89,7 @@ export default function Members() {
     middle_name: '',
     gender: '',
     course_duration: '',
-    college_name: 'Silver Oak University',
+    college_name: '',
     current_semester: undefined,
     enrollment_number: '',
     whatsapp_number: '',
@@ -94,9 +99,18 @@ export default function Members() {
     hod_name: '',
     principal_name: '',
   });
+  const [facultyFormData, setFacultyFormData] = useState({
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    college_id: '',
+    password: '',
+    whatsapp_number: '',
+  });
   
   const { members, isLoading, createMember, toggleMemberStatus, deleteMember, fetchMembers } = useMembers();
-  const { isAdminOrCoordinator } = useAuth();
+  const { colleges } = useColleges();
+  const { isAdminOrCoordinator, isAdmin } = useAuth();
   const { toast } = useToast();
 
   // Filter out program officer (BSGSOU000) from member count and list
@@ -145,7 +159,7 @@ export default function Members() {
         middle_name: '',
         gender: '',
         course_duration: '',
-        college_name: 'Silver Oak University',
+        college_name: '',
         current_semester: undefined,
         enrollment_number: '',
         whatsapp_number: '',
@@ -155,6 +169,56 @@ export default function Members() {
         hod_name: '',
         principal_name: '',
       });
+    }
+  };
+
+  const handleCreateFaculty = async () => {
+    if (!facultyFormData.first_name || !facultyFormData.last_name || !facultyFormData.college_id) {
+      toast({
+        title: 'Validation Error',
+        description: 'First name, last name, and college are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const response = await supabase.functions.invoke('create-faculty', {
+        body: facultyFormData,
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create faculty coordinator');
+      }
+
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create faculty coordinator');
+      }
+
+      setCreatedCredentials({ uid: result.uid, password: result.password, college: result.college });
+      setFacultyFormData({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        college_id: '',
+        password: '',
+        whatsapp_number: '',
+      });
+      toast({
+        title: 'Faculty Coordinator created successfully',
+        description: `UID: ${result.uid}`,
+      });
+      await fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: 'Error creating faculty coordinator',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -237,6 +301,137 @@ export default function Members() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
+            {isAdmin && (
+              <Dialog open={isFacultyDialogOpen} onOpenChange={(open) => {
+                setIsFacultyDialogOpen(open);
+                if (!open) setCreatedCredentials(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Add Faculty
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  {createdCredentials ? (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>Faculty Coordinator Created!</DialogTitle>
+                        <DialogDescription>
+                          Save these credentials - the password cannot be recovered.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="p-4 bg-muted rounded-lg space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">UID:</span>
+                          <code className="bg-background px-2 py-1 rounded">{createdCredentials.uid}</code>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Password:</span>
+                          <code className="bg-background px-2 py-1 rounded">{createdCredentials.password}</code>
+                        </div>
+                        {createdCredentials.college && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">College:</span>
+                            <span className="text-sm">{createdCredentials.college}</span>
+                          </div>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                          navigator.clipboard.writeText(`UID: ${createdCredentials.uid}\nPassword: ${createdCredentials.password}`);
+                          toast({ title: 'Credentials copied to clipboard' });
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Credentials
+                        </Button>
+                        <Button onClick={() => {
+                          setCreatedCredentials(null);
+                          setIsFacultyDialogOpen(false);
+                        }}>
+                          Done
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>Add Faculty Coordinator</DialogTitle>
+                        <DialogDescription>
+                          Create a faculty coordinator account. They will only see activity registrations for their college.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>First Name *</Label>
+                            <Input
+                              value={facultyFormData.first_name}
+                              onChange={(e) => setFacultyFormData({ ...facultyFormData, first_name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Last Name *</Label>
+                            <Input
+                              value={facultyFormData.last_name}
+                              onChange={(e) => setFacultyFormData({ ...facultyFormData, last_name: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Middle Name</Label>
+                          <Input
+                            value={facultyFormData.middle_name}
+                            onChange={(e) => setFacultyFormData({ ...facultyFormData, middle_name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>College *</Label>
+                          <Select 
+                            value={facultyFormData.college_id} 
+                            onValueChange={(v) => setFacultyFormData({ ...facultyFormData, college_id: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select college" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colleges.map(college => (
+                                <SelectItem key={college.id} value={college.id}>
+                                  {college.short_code} - {college.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Password (Optional)</Label>
+                          <Input
+                            type="text"
+                            value={facultyFormData.password}
+                            onChange={(e) => setFacultyFormData({ ...facultyFormData, password: e.target.value })}
+                            placeholder="Leave empty to auto-generate"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>WhatsApp Number</Label>
+                          <Input
+                            value={facultyFormData.whatsapp_number}
+                            onChange={(e) => setFacultyFormData({ ...facultyFormData, whatsapp_number: e.target.value })}
+                            placeholder="10 digits"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsFacultyDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateFaculty} disabled={isCreating}>
+                          {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Faculty'}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
             {isAdminOrCoordinator && (
               <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
                 setIsAddDialogOpen(open);
@@ -364,12 +559,22 @@ export default function Members() {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="college_name">College Name</Label>
-                          <Input
-                            id="college_name"
-                            value={formData.college_name}
-                            onChange={(e) => setFormData({ ...formData, college_name: e.target.value })}
-                          />
+                          <Label>College *</Label>
+                          <Select 
+                            value={formData.college_name} 
+                            onValueChange={(v) => setFormData({ ...formData, college_name: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select college" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colleges.map(college => (
+                                <SelectItem key={college.id} value={college.name}>
+                                  {college.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="enrollment_number">Enrollment Number</Label>
