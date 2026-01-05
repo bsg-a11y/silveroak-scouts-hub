@@ -525,6 +525,7 @@ export type Database = {
           created_at: string
           current_semester: number | null
           date_of_birth: string | null
+          email: string | null
           employee_id: string | null
           enrollment_number: string | null
           faculty_college_id: string | null
@@ -552,6 +553,7 @@ export type Database = {
           created_at?: string
           current_semester?: number | null
           date_of_birth?: string | null
+          email?: string | null
           employee_id?: string | null
           enrollment_number?: string | null
           faculty_college_id?: string | null
@@ -579,6 +581,7 @@ export type Database = {
           created_at?: string
           current_semester?: number | null
           date_of_birth?: string | null
+          email?: string | null
           employee_id?: string | null
           enrollment_number?: string | null
           faculty_college_id?: string | null

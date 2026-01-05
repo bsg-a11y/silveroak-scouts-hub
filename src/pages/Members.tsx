@@ -54,11 +54,13 @@ import {
   Key,
   GraduationCap,
 } from 'lucide-react';
-import { useMembers, CreateMemberData } from '@/hooks/useMembers';
+import { useMembers, CreateMemberData, Member } from '@/hooks/useMembers';
 import { useColleges } from '@/hooks/useColleges';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { MemberDetailsDialog } from '@/components/MemberDetailsDialog';
+import { EditMemberDialog } from '@/components/EditMemberDialog';
+import { FullProfileDialog } from '@/components/FullProfileDialog';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -81,6 +83,7 @@ export default function Members() {
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [viewDetailsMember, setViewDetailsMember] = useState<{ id: string; user_id: string; uid: string; first_name: string; last_name: string } | null>(null);
+  const [editMember, setEditMember] = useState<Member | null>(null);
   const [formData, setFormData] = useState<CreateMemberData>({
     uid: '',
     password: '',
@@ -88,6 +91,8 @@ export default function Members() {
     last_name: '',
     middle_name: '',
     gender: '',
+    date_of_birth: '',
+    email: '',
     course_duration: '',
     college_name: '',
     current_semester: undefined,
@@ -108,13 +113,16 @@ export default function Members() {
     whatsapp_number: '',
   });
   
-  const { members, isLoading, createMember, toggleMemberStatus, deleteMember, fetchMembers } = useMembers();
+  const { members, isLoading, createMember, updateMember, toggleMemberStatus, deleteMember, fetchMembers } = useMembers();
   const { colleges } = useColleges();
   const { isAdminOrCoordinator, isAdmin } = useAuth();
   const { toast } = useToast();
 
-  // Filter out program officer (BSGSOU000) from member count and list
-  const regularMembers = members.filter(m => !m.uid?.startsWith('BSGSOU000'));
+  // Filter out program officer (BSGSOU000) and faculty coordinators from member count and list
+  const regularMembers = members.filter(m => 
+    !m.uid?.startsWith('BSGSOU000') && 
+    m.role !== 'faculty_coordinator'
+  );
 
   const filteredMembers = regularMembers.filter(
     (member) =>
@@ -158,6 +166,8 @@ export default function Members() {
         last_name: '',
         middle_name: '',
         gender: '',
+        date_of_birth: '',
+        email: '',
         course_duration: '',
         college_name: '',
         current_semester: undefined,
@@ -543,6 +553,23 @@ export default function Members() {
                           </Select>
                         </div>
                         <div className="space-y-2">
+                          <Label>Date of Birth</Label>
+                          <Input
+                            type="date"
+                            value={formData.date_of_birth}
+                            onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email</Label>
+                          <Input
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="name@example.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="course_duration">Course Duration</Label>
                           <Select 
                             value={formData.course_duration} 
@@ -823,6 +850,10 @@ export default function Members() {
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setEditMember(member)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit Profile
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setResetPasswordMember({
                                   id: member.id,
                                   userId: member.user_id,
@@ -933,6 +964,14 @@ export default function Members() {
           member={viewDetailsMember}
           open={!!viewDetailsMember}
           onOpenChange={(open) => !open && setViewDetailsMember(null)}
+        />
+
+        {/* Edit Member Dialog */}
+        <EditMemberDialog
+          member={editMember}
+          open={!!editMember}
+          onOpenChange={(open) => !open && setEditMember(null)}
+          onSave={updateMember}
         />
       </div>
     </DashboardLayout>

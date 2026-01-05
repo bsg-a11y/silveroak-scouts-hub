@@ -49,6 +49,7 @@ import { useCertificateRequests } from '@/hooks/useCertificateRequests';
 export default function Activities() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDateActivities, setSelectedDateActivities] = useState<typeof activities>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [viewRegistrationsDialog, setViewRegistrationsDialog] = useState<string | null>(null);
@@ -292,7 +293,11 @@ export default function Activities() {
                   return (
                     <div
                       key={day.toString()}
-                      onClick={() => setSelectedDate(day)}
+                      onClick={() => {
+                        setSelectedDate(day);
+                        const dayActs = getActivitiesForDate(day);
+                        setSelectedDateActivities(dayActs);
+                      }}
                       className={cn(
                         "h-20 p-1 border rounded-lg cursor-pointer transition-all duration-200",
                         isToday(day) && "border-primary bg-primary/5",
@@ -419,6 +424,60 @@ export default function Activities() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Activity Details Popup for Selected Date */}
+        <Dialog open={selectedDateActivities.length > 0} onOpenChange={(open) => !open && setSelectedDateActivities([])}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Activities on {selectedDate ? format(selectedDate, 'PPP') : ''}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {selectedDateActivities.map((activity) => (
+                <div key={activity.id} className="p-4 rounded-lg border border-border/50">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold">{activity.name}</h4>
+                    <Badge variant={activity.status === 'upcoming' ? 'success' : 'inactive'}>
+                      {activity.status}
+                    </Badge>
+                  </div>
+                  {activity.description && (
+                    <p className="text-sm text-muted-foreground mb-3">{activity.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                    {activity.activity_time && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {activity.activity_time}
+                      </div>
+                    )}
+                    {activity.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        {activity.location}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      {activity.registered_count || 0} registered
+                    </div>
+                  </div>
+                  {user && activity.status === 'upcoming' && (
+                    <Button
+                      size="sm"
+                      variant={activity.is_registered ? "outline" : "default"}
+                      className="mt-3"
+                      onClick={() => handleRegister(activity.id, activity.is_registered || false)}
+                    >
+                      {activity.is_registered ? 'Unregister' : 'Register'}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* View Registrations Dialog */}
         <Dialog open={!!viewRegistrationsDialog} onOpenChange={(open) => !open && setViewRegistrationsDialog(null)}>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,19 +23,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Mail, Phone, Building2, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Mail, Phone, Building2, Trash2, Loader2, Upload } from 'lucide-react';
 import { useCommittee, CommitteePosition } from '@/hooks/useCommittee';
-import { useMembers } from '@/hooks/useMembers';
+import { useMembers, Member } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProfilePhotoUpload } from '@/components/ProfilePhotoUpload';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function OurTeam() {
-  const { departments, positions, isLoading, addPosition, removePosition, addDepartment } = useCommittee();
+  const { departments, positions, isLoading, addPosition, removePosition, addDepartment, fetchData } = useCommittee();
   const { members } = useMembers();
   const { isAdminOrCoordinator } = useAuth();
+  const { toast } = useToast();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddDeptDialogOpen, setIsAddDeptDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedMemberForPhoto, setSelectedMemberForPhoto] = useState<{ userId: string; positionId: string } | null>(null);
   const [newPosition, setNewPosition] = useState({
     user_id: '',
     position_type: '' as 'institute_coordinator' | 'executive' | 'core' | '',
@@ -45,6 +50,19 @@ export default function OurTeam() {
     phone: '',
   });
   const [newDept, setNewDept] = useState({ name: '', committee_type: '' as 'executive' | 'core' | '' });
+
+  // Auto-fetch member data when member is selected
+  const selectedMember = members.find(m => m.user_id === newPosition.user_id);
+  
+  useEffect(() => {
+    if (selectedMember) {
+      setNewPosition(prev => ({
+        ...prev,
+        email: selectedMember.email || prev.email,
+        phone: selectedMember.whatsapp_number || prev.phone,
+      }));
+    }
+  }, [selectedMember]);
 
   const instituteCoordinators = positions.filter(p => p.position_type === 'institute_coordinator');
   const executiveMembers = positions.filter(p => p.position_type === 'executive');
@@ -82,17 +100,33 @@ export default function OurTeam() {
     }
   };
 
+  const handlePhotoUploaded = async (_url: string) => {
+    setSelectedMemberForPhoto(null);
+    await fetchData();
+    toast({ title: 'Photo updated successfully' });
+  };
+
   const MemberCard = ({ position }: { position: CommitteePosition }) => (
     <Card className="group relative overflow-hidden hover:shadow-lg transition-shadow">
       {isAdminOrCoordinator && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-          onClick={() => removePosition(position.id)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-primary"
+            onClick={() => setSelectedMemberForPhoto({ userId: position.user_id, positionId: position.id })}
+          >
+            <Upload className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive"
+            onClick={() => removePosition(position.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       )}
       <CardContent className="p-6 text-center">
         <SecureAvatar
@@ -417,6 +451,26 @@ export default function OurTeam() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Photo Upload Dialog */}
+        <Dialog open={!!selectedMemberForPhoto} onOpenChange={(open) => !open && setSelectedMemberForPhoto(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Profile Photo</DialogTitle>
+              <DialogDescription>
+                Upload a profile photo for this committee member.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedMemberForPhoto && (
+              <ProfilePhotoUpload 
+                userId={selectedMemberForPhoto.userId}
+                currentPhotoUrl={null}
+                fallback="?"
+                onPhotoUpdated={handlePhotoUploaded}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
