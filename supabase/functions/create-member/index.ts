@@ -16,6 +16,7 @@ interface CreateMemberRequest {
   email?: string;
   course_duration?: string;
   college_name?: string;
+  academic_department?: string;
   current_semester?: number;
   enrollment_number?: string;
   class_coordinator_name?: string;
@@ -208,6 +209,7 @@ Deno.serve(async (req) => {
       email: body.email || null,
       course_duration: body.course_duration || null,
       college_name: body.college_name || "Silver Oak University",
+      academic_department: body.academic_department || null,
       current_semester: body.current_semester || null,
       enrollment_number: body.enrollment_number || null,
       class_coordinator_name: body.class_coordinator_name || null,

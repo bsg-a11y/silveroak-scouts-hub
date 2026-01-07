@@ -32,7 +32,7 @@ export function useDashboardStats() {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Get faculty coordinator user IDs to exclude
+      // Get faculty coordinator user IDs to exclude from member counts
       const { data: facultyRoles } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -41,26 +41,18 @@ export function useDashboardStats() {
       const facultyUserIds = facultyRoles?.map(r => r.user_id) || [];
 
       // Fetch members count (excluding program officer and faculty coordinators)
-      let totalMembersQuery = supabase
+      // Build query without faculty coordinators
+      const { data: allProfiles } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .neq('is_program_officer', true);
+        .select('user_id, status, is_program_officer');
       
-      if (facultyUserIds.length > 0) {
-        totalMembersQuery = totalMembersQuery.not('user_id', 'in', `(${facultyUserIds.join(',')})`);
-      }
-      const { count: totalMembers } = await totalMembersQuery;
-
-      let activeMembersQuery = supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active')
-        .neq('is_program_officer', true);
+      // Filter out program officers and faculty coordinators
+      const regularProfiles = (allProfiles || []).filter(p => 
+        !p.is_program_officer && !facultyUserIds.includes(p.user_id)
+      );
       
-      if (facultyUserIds.length > 0) {
-        activeMembersQuery = activeMembersQuery.not('user_id', 'in', `(${facultyUserIds.join(',')})`);
-      }
-      const { count: activeMembers } = await activeMembersQuery;
+      const totalMembers = regularProfiles.length;
+      const activeMembers = regularProfiles.filter(p => p.status === 'active').length;
 
       // Fetch upcoming activities count
       const { count: upcomingActivities } = await supabase
