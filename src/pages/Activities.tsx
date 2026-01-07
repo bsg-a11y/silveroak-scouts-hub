@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -37,25 +47,39 @@ import {
   X,
   Eye,
   Award,
+  Pencil,
+  Trash2,
+  Building2,
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useActivities, CreateActivityData, RegisteredMember } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
+import { useColleges } from '@/hooks/useColleges';
 import { RegisteredMembersList } from '@/components/RegisteredMembersList';
 import { ExportMembersList } from '@/components/ExportMembersList';
 import { useCertificateRequests } from '@/hooks/useCertificateRequests';
+import { getDepartmentsForCollege } from '@/lib/collegeDepartments';
+import { getCollegeColor, getCollegeBgColor } from '@/lib/collegeColors';
+
+interface ActivityFormData extends CreateActivityData {
+  collaboration_college?: string;
+  collaboration_department?: string;
+}
 
 export default function Activities() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDateActivities, setSelectedDateActivities] = useState<typeof activities>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteActivityId, setDeleteActivityId] = useState<string | null>(null);
+  const [editingActivity, setEditingActivity] = useState<typeof activities[0] | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [viewRegistrationsDialog, setViewRegistrationsDialog] = useState<string | null>(null);
   const [registeredMembers, setRegisteredMembers] = useState<RegisteredMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
-  const [formData, setFormData] = useState<CreateActivityData>({
+  const [formData, setFormData] = useState<ActivityFormData>({
     name: '',
     description: '',
     activity_date: '',
@@ -63,13 +87,23 @@ export default function Activities() {
     location: '',
     capacity: undefined,
     registration_enabled: true,
+    collaboration_college: '',
+    collaboration_department: '',
   });
 
-  const { activities, isLoading, createActivity, registerForActivity, unregisterFromActivity, fetchRegisteredMembers } = useActivities();
+  const { activities, isLoading, createActivity, updateActivity, deleteActivity, registerForActivity, unregisterFromActivity, fetchRegisteredMembers } = useActivities();
   const { isAdminOrCoordinator, user } = useAuth();
+  const { colleges } = useColleges();
   const { createRequest } = useCertificateRequests();
   const [certRequestDialog, setCertRequestDialog] = useState<{ activityId: string; activityName: string } | null>(null);
   const [certRequestReason, setCertRequestReason] = useState('');
+
+  // Get departments based on selected collaboration college
+  const collaborationDepartments = useMemo(() => {
+    if (!formData.collaboration_college) return [];
+    const college = colleges.find(c => c.id === formData.collaboration_college || c.name === formData.collaboration_college);
+    return getDepartmentsForCollege(college?.name || formData.collaboration_college);
+  }, [formData.collaboration_college, colleges]);
 
   // Fetch registered members when dialog opens
   useEffect(() => {
@@ -99,6 +133,20 @@ export default function Activities() {
   const upcomingActivities = activities.filter(a => a.status === 'upcoming');
   const completedActivities = activities.filter(a => a.status === 'completed');
 
+  const resetFormData = () => {
+    setFormData({
+      name: '',
+      description: '',
+      activity_date: '',
+      activity_time: '',
+      location: '',
+      capacity: undefined,
+      registration_enabled: true,
+      collaboration_college: '',
+      collaboration_department: '',
+    });
+  };
+
   const handleCreateActivity = async () => {
     if (!formData.name || !formData.activity_date) return;
 
@@ -108,16 +156,45 @@ export default function Activities() {
 
     if (result.success) {
       setIsAddDialogOpen(false);
-      setFormData({
-        name: '',
-        description: '',
-        activity_date: '',
-        activity_time: '',
-        location: '',
-        capacity: undefined,
-        registration_enabled: true,
-      });
+      resetFormData();
     }
+  };
+
+  const handleEditActivity = (activity: typeof activities[0]) => {
+    setEditingActivity(activity);
+    setFormData({
+      name: activity.name,
+      description: activity.description || '',
+      activity_date: activity.activity_date,
+      activity_time: activity.activity_time || '',
+      location: activity.location || '',
+      capacity: activity.capacity || undefined,
+      registration_enabled: activity.registration_enabled,
+      status: activity.status,
+      collaboration_college: (activity as any).collaboration_college || '',
+      collaboration_department: (activity as any).collaboration_department || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateActivity = async () => {
+    if (!editingActivity || !formData.name || !formData.activity_date) return;
+
+    setIsCreating(true);
+    const result = await updateActivity(editingActivity.id, formData);
+    setIsCreating(false);
+
+    if (result.success) {
+      setIsEditDialogOpen(false);
+      setEditingActivity(null);
+      resetFormData();
+    }
+  };
+
+  const handleDeleteActivity = async () => {
+    if (!deleteActivityId) return;
+    await deleteActivity(deleteActivityId);
+    setDeleteActivityId(null);
   };
 
   const handleRegister = async (activityId: string, isRegistered: boolean) => {
@@ -137,6 +214,154 @@ export default function Activities() {
     setCertRequestDialog(null);
     setCertRequestReason('');
   };
+
+  // Get color for activity based on collaboration college
+  const getActivityColor = (activity: typeof activities[0]) => {
+    const collabCollege = (activity as any).collaboration_college;
+    if (collabCollege) {
+      return getCollegeColor(collabCollege);
+    }
+    return undefined;
+  };
+
+  const getActivityBgColor = (activity: typeof activities[0]) => {
+    const collabCollege = (activity as any).collaboration_college;
+    if (collabCollege) {
+      return getCollegeBgColor(collabCollege);
+    }
+    return undefined;
+  };
+
+  const ActivityForm = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Activity Name *</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="activity_date">Date *</Label>
+          <Input
+            id="activity_date"
+            type="date"
+            value={formData.activity_date}
+            onChange={(e) => setFormData({ ...formData, activity_date: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="activity_time">Time</Label>
+          <Input
+            id="activity_time"
+            type="time"
+            value={formData.activity_time}
+            onChange={(e) => setFormData({ ...formData, activity_time: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="location">Location</Label>
+        <Input
+          id="location"
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="capacity">Capacity (optional)</Label>
+        <Input
+          id="capacity"
+          type="number"
+          value={formData.capacity || ''}
+          onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || undefined })}
+        />
+      </div>
+      
+      {/* Collaboration Fields */}
+      <div className="border-t pt-4 mt-4">
+        <Label className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+          <Building2 className="h-4 w-4" />
+          Collaboration (Optional)
+        </Label>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <div className="space-y-2">
+            <Label>Collaboration College</Label>
+            <Select 
+              value={formData.collaboration_college} 
+              onValueChange={(v) => setFormData({ ...formData, collaboration_college: v, collaboration_department: '' })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select college" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {colleges.map(college => (
+                  <SelectItem key={college.id} value={college.name}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: getCollegeColor(college.name) }}
+                      />
+                      {college.short_code} - {college.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Collaboration Department</Label>
+            <Select 
+              value={formData.collaboration_department} 
+              onValueChange={(v) => setFormData({ ...formData, collaboration_department: v })}
+              disabled={!formData.collaboration_college || collaborationDepartments.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={collaborationDepartments.length > 0 ? "Select department" : "Select college first"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {collaborationDepartments.map(dept => (
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {isEdit && (
+        <div className="space-y-2">
+          <Label>Status</Label>
+          <Select 
+            value={formData.status} 
+            onValueChange={(v) => setFormData({ ...formData, status: v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -158,70 +383,16 @@ export default function Activities() {
                   Schedule Activity
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Schedule New Activity</DialogTitle>
                   <DialogDescription>
                     Create a new activity for BSG members.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Activity Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="activity_date">Date *</Label>
-                      <Input
-                        id="activity_date"
-                        type="date"
-                        value={formData.activity_date}
-                        onChange={(e) => setFormData({ ...formData, activity_date: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="activity_time">Time</Label>
-                      <Input
-                        id="activity_time"
-                        type="time"
-                        value={formData.activity_time}
-                        onChange={(e) => setFormData({ ...formData, activity_time: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="capacity">Capacity (optional)</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      value={formData.capacity || ''}
-                      onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || undefined })}
-                    />
-                  </div>
-                </div>
+                <ActivityForm />
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetFormData(); }}>
                     Cancel
                   </Button>
                   <Button onClick={handleCreateActivity} disabled={isCreating}>
@@ -313,19 +484,24 @@ export default function Activities() {
                       </div>
                       {hasActivities && (
                         <div className="mt-1 space-y-1">
-                          {dayActivities.slice(0, 2).map((activity) => (
-                            <div
-                              key={activity.id}
-                              className={cn(
-                                "text-[10px] px-1 py-0.5 rounded truncate",
-                                activity.status === 'upcoming' 
-                                  ? "bg-bsg-green/10 text-bsg-green"
-                                  : "bg-muted text-muted-foreground"
-                              )}
-                            >
-                              {activity.name}
-                            </div>
-                          ))}
+                          {dayActivities.slice(0, 2).map((activity) => {
+                            const bgColor = getActivityBgColor(activity);
+                            const textColor = getActivityColor(activity);
+                            return (
+                              <div
+                                key={activity.id}
+                                className={cn(
+                                  "text-[10px] px-1 py-0.5 rounded truncate",
+                                  !bgColor && (activity.status === 'upcoming' 
+                                    ? "bg-bsg-green/10 text-bsg-green"
+                                    : "bg-muted text-muted-foreground")
+                                )}
+                                style={bgColor ? { backgroundColor: bgColor, color: textColor } : undefined}
+                              >
+                                {activity.name}
+                              </div>
+                            );
+                          })}
                           {dayActivities.length > 2 && (
                             <div className="text-[10px] text-muted-foreground">
                               +{dayActivities.length - 2} more
@@ -354,72 +530,94 @@ export default function Activities() {
               ) : upcomingActivities.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No upcoming activities</p>
               ) : (
-                upcomingActivities.slice(0, 3).map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-foreground">{activity.name}</h4>
-                      <Badge variant="success">Open</Badge>
-                    </div>
-                    <div className="space-y-1.5 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {format(new Date(activity.activity_date), 'MMM d, yyyy')}
-                      </div>
-                      {activity.activity_time && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-3.5 w-3.5" />
-                          {activity.activity_time}
-                        </div>
-                      )}
-                      {activity.location && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5" />
-                          {activity.location}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3.5 w-3.5" />
-                        {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''} registered
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      {isAdminOrCoordinator && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => setViewRegistrationsDialog(activity.id)}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                      )}
-                      {user && (
-                        <Button 
-                          size="sm" 
-                          variant={activity.is_registered ? "outline" : "secondary"} 
-                          className="flex-1"
-                          onClick={() => handleRegister(activity.id, activity.is_registered || false)}
-                        >
-                          {activity.is_registered ? (
+                upcomingActivities.slice(0, 3).map((activity) => {
+                  const collabCollege = (activity as any).collaboration_college;
+                  return (
+                    <div
+                      key={activity.id}
+                      className="p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
+                      style={collabCollege ? { borderLeftWidth: 4, borderLeftColor: getCollegeColor(collabCollege) } : undefined}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-foreground">{activity.name}</h4>
+                        <div className="flex items-center gap-1">
+                          {isAdminOrCoordinator && (
                             <>
-                              <X className="h-3 w-3 mr-1" />
-                              Unregister
-                            </>
-                          ) : (
-                            <>
-                              <Check className="h-3 w-3 mr-1" />
-                              Register
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditActivity(activity)}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteActivityId(activity.id)}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </>
                           )}
-                        </Button>
+                          <Badge variant="success">Open</Badge>
+                        </div>
+                      </div>
+                      {collabCollege && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                          <Building2 className="h-3 w-3" />
+                          <span>with {collabCollege}</span>
+                        </div>
                       )}
+                      <div className="space-y-1.5 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {format(new Date(activity.activity_date), 'MMM d, yyyy')}
+                        </div>
+                        {activity.activity_time && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5" />
+                            {activity.activity_time}
+                          </div>
+                        )}
+                        {activity.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {activity.location}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Users className="h-3.5 w-3.5" />
+                          {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''} registered
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        {isAdminOrCoordinator && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setViewRegistrationsDialog(activity.id)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                        )}
+                        {user && (
+                          <Button 
+                            size="sm" 
+                            variant={activity.is_registered ? "outline" : "secondary"} 
+                            className="flex-1"
+                            onClick={() => handleRegister(activity.id, activity.is_registered || false)}
+                          >
+                            {activity.is_registered ? (
+                              <>
+                                <X className="h-3 w-3 mr-1" />
+                                Unregister
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                Register
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -433,61 +631,132 @@ export default function Activities() {
                 Activities on {selectedDate ? format(selectedDate, 'PPP') : ''}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              {selectedDateActivities.map((activity) => (
-                <div key={activity.id} className="p-4 rounded-lg border border-border/50">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold">{activity.name}</h4>
-                    <Badge variant={activity.status === 'upcoming' ? 'success' : 'inactive'}>
-                      {activity.status}
-                    </Badge>
-                  </div>
-                  {activity.description && (
-                    <p className="text-sm text-muted-foreground mb-3">{activity.description}</p>
-                  )}
-                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                    {activity.activity_time && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {activity.activity_time}
+            <div className="space-y-4">
+              {selectedDateActivities.map((activity) => {
+                const collabCollege = (activity as any).collaboration_college;
+                return (
+                  <div 
+                    key={activity.id} 
+                    className="p-4 rounded-lg border"
+                    style={collabCollege ? { borderLeftWidth: 4, borderLeftColor: getCollegeColor(collabCollege) } : undefined}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium">{activity.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{activity.description || 'No description'}</p>
+                        {collabCollege && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Building2 className="h-3 w-3" />
+                            <span>Collaboration with {collabCollege}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {activity.location && (
                       <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {activity.location}
+                        {isAdminOrCoordinator && (
+                          <>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { handleEditActivity(activity); setSelectedDateActivities([]); }}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => { setDeleteActivityId(activity.id); setSelectedDateActivities([]); }}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                        <Badge variant={activity.status === 'upcoming' ? 'success' : 'inactive'}>
+                          {activity.status}
+                        </Badge>
                       </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {activity.registered_count || 0} registered
                     </div>
+                    <div className="flex flex-wrap gap-3 mt-3 text-sm text-muted-foreground">
+                      {activity.activity_time && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {activity.activity_time}
+                        </div>
+                      )}
+                      {activity.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {activity.location}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {activity.registered_count || 0} registered
+                      </div>
+                    </div>
+                    {user && activity.status === 'upcoming' && (
+                      <Button 
+                        size="sm"
+                        className="mt-3 w-full"
+                        variant={activity.is_registered ? "outline" : "default"}
+                        onClick={() => handleRegister(activity.id, activity.is_registered || false)}
+                      >
+                        {activity.is_registered ? 'Unregister' : 'Register Now'}
+                      </Button>
+                    )}
                   </div>
-                  {user && activity.status === 'upcoming' && (
-                    <Button
-                      size="sm"
-                      variant={activity.is_registered ? "outline" : "default"}
-                      className="mt-3"
-                      onClick={() => handleRegister(activity.id, activity.is_registered || false)}
-                    >
-                      {activity.is_registered ? 'Unregister' : 'Register'}
-                    </Button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </DialogContent>
         </Dialog>
 
+        {/* Edit Activity Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setEditingActivity(null); resetFormData(); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Activity</DialogTitle>
+              <DialogDescription>
+                Update the activity details.
+              </DialogDescription>
+            </DialogHeader>
+            <ActivityForm isEdit />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingActivity(null); resetFormData(); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateActivity} disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Activity'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteActivityId} onOpenChange={(open) => !open && setDeleteActivityId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Activity?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the activity and all associated registrations.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteActivity} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* View Registrations Dialog */}
         <Dialog open={!!viewRegistrationsDialog} onOpenChange={(open) => !open && setViewRegistrationsDialog(null)}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
-              <div className="flex items-center justify-between pr-8">
+              <div className="flex items-center justify-between">
                 <div>
                   <DialogTitle>Registered Members</DialogTitle>
                   <DialogDescription>
-                    {activities.find(a => a.id === viewRegistrationsDialog)?.name}
+                    {registeredMembers.length} members registered
                   </DialogDescription>
                 </div>
                 {registeredMembers.length > 0 && (
@@ -571,62 +840,84 @@ export default function Activities() {
                   <p className="text-center text-muted-foreground py-12">No upcoming activities</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {upcomingActivities.map((activity) => (
-                      <div
-                        key={activity.id}
-                        className="p-4 rounded-lg border border-border/50 hover:shadow-card transition-all"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold text-foreground">{activity.name}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {activity.description || 'No description'}
-                            </p>
+                    {upcomingActivities.map((activity) => {
+                      const collabCollege = (activity as any).collaboration_college;
+                      return (
+                        <div
+                          key={activity.id}
+                          className="p-4 rounded-lg border border-border/50 hover:shadow-card transition-all"
+                          style={collabCollege ? { borderLeftWidth: 4, borderLeftColor: getCollegeColor(collabCollege) } : undefined}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-foreground">{activity.name}</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {activity.description || 'No description'}
+                              </p>
+                              {collabCollege && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                  <Building2 className="h-3 w-3" />
+                                  <span>with {collabCollege}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {isAdminOrCoordinator && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditActivity(activity)}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteActivityId(activity.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                              <Badge variant="success">Upcoming</Badge>
+                            </div>
                           </div>
-                          <Badge variant="success">Upcoming</Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="h-4 w-4" />
-                            {format(new Date(activity.activity_date), 'MMM d, yyyy')}
-                          </div>
-                          {activity.activity_time && (
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1.5">
-                              <Clock className="h-4 w-4" />
-                              {activity.activity_time}
+                              <Calendar className="h-4 w-4" />
+                              {format(new Date(activity.activity_date), 'MMM d, yyyy')}
                             </div>
-                          )}
-                          {activity.location && (
-                            <div className="flex items-center gap-1.5">
-                              <MapPin className="h-4 w-4" />
-                              {activity.location}
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-4 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-24 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-bsg-green rounded-full"
-                                style={{ width: `${((activity.registered_count || 0) / (activity.capacity || 100)) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''}
-                            </span>
+                            {activity.activity_time && (
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="h-4 w-4" />
+                                {activity.activity_time}
+                              </div>
+                            )}
+                            {activity.location && (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="h-4 w-4" />
+                                {activity.location}
+                              </div>
+                            )}
                           </div>
-                          {user && (
-                            <Button 
-                              size="sm"
-                              variant={activity.is_registered ? "outline" : "default"}
-                              onClick={() => handleRegister(activity.id, activity.is_registered || false)}
-                            >
-                              {activity.is_registered ? 'Unregister' : 'Register'}
-                            </Button>
-                          )}
+                          <div className="mt-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-24 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-bsg-green rounded-full"
+                                  style={{ width: `${((activity.registered_count || 0) / (activity.capacity || 100)) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''}
+                              </span>
+                            </div>
+                            {user && (
+                              <Button 
+                                size="sm"
+                                variant={activity.is_registered ? "outline" : "default"}
+                                onClick={() => handleRegister(activity.id, activity.is_registered || false)}
+                              >
+                                {activity.is_registered ? 'Unregister' : 'Register'}
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
@@ -635,54 +926,76 @@ export default function Activities() {
                   <p className="text-center text-muted-foreground py-12">No completed activities</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {completedActivities.map((activity) => (
-                      <div
-                        key={activity.id}
-                        className="p-4 rounded-lg border border-border/50 bg-muted/20"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold text-foreground">{activity.name}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {activity.description || 'No description'}
-                            </p>
+                    {completedActivities.map((activity) => {
+                      const collabCollege = (activity as any).collaboration_college;
+                      return (
+                        <div
+                          key={activity.id}
+                          className="p-4 rounded-lg border border-border/50 bg-muted/20"
+                          style={collabCollege ? { borderLeftWidth: 4, borderLeftColor: getCollegeColor(collabCollege) } : undefined}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-foreground">{activity.name}</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {activity.description || 'No description'}
+                              </p>
+                              {collabCollege && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                  <Building2 className="h-3 w-3" />
+                                  <span>with {collabCollege}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {isAdminOrCoordinator && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditActivity(activity)}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteActivityId(activity.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                              <Badge variant="inactive">Completed</Badge>
+                            </div>
                           </div>
-                          <Badge variant="inactive">Completed</Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="h-4 w-4" />
-                            {format(new Date(activity.activity_date), 'MMM d, yyyy')}
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-4 w-4" />
+                              {format(new Date(activity.activity_date), 'MMM d, yyyy')}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-4 w-4" />
+                              {activity.registered_count || 0} attended
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Users className="h-4 w-4" />
-                            {activity.registered_count || 0} attended
+                          <div className="flex gap-2">
+                            {isAdminOrCoordinator && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setViewRegistrationsDialog(activity.id)}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                View Members
+                              </Button>
+                            )}
+                            {user && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setCertRequestDialog({ activityId: activity.id, activityName: activity.name })}
+                              >
+                                <Award className="h-3 w-3 mr-1" />
+                                Request Certificate
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          {isAdminOrCoordinator && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setViewRegistrationsDialog(activity.id)}
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              View Members
-                            </Button>
-                          )}
-                          {user && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setCertRequestDialog({ activityId: activity.id, activityName: activity.name })}
-                            >
-                              <Award className="h-3 w-3 mr-1" />
-                              Request Certificate
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
