@@ -518,6 +518,7 @@ export type Database = {
       profiles: {
         Row: {
           aadhaar_number: string | null
+          academic_department: string | null
           blood_group: string | null
           class_coordinator_name: string | null
           college_name: string | null
@@ -546,6 +547,7 @@ export type Database = {
         }
         Insert: {
           aadhaar_number?: string | null
+          academic_department?: string | null
           blood_group?: string | null
           class_coordinator_name?: string | null
           college_name?: string | null
@@ -574,6 +576,7 @@ export type Database = {
         }
         Update: {
           aadhaar_number?: string | null
+          academic_department?: string | null
           blood_group?: string | null
           class_coordinator_name?: string | null
           college_name?: string | null

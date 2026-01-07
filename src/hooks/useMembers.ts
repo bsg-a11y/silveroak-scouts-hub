@@ -14,6 +14,7 @@ export interface Member {
   date_of_birth: string | null;
   course_duration: string | null;
   college_name: string | null;
+  academic_department: string | null;
   current_semester: number | null;
   enrollment_number: string | null;
   class_coordinator_name: string | null;
@@ -41,6 +42,7 @@ export interface CreateMemberData {
   email?: string;
   course_duration?: string;
   college_name?: string;
+  academic_department?: string;
   current_semester?: number;
   enrollment_number?: string;
   class_coordinator_name?: string;
@@ -145,6 +147,7 @@ export function useMembers() {
           email: validatedData.email || null,
           course_duration: validatedData.course_duration || null,
           college_name: validatedData.college_name || 'Silver Oak University',
+          academic_department: data.academic_department || null,
           current_semester: validatedData.current_semester || null,
           enrollment_number: validatedData.enrollment_number || null,
           class_coordinator_name: validatedData.class_coordinator_name || null,
@@ -196,6 +199,7 @@ export function useMembers() {
       if (data.email !== undefined) updateData.email = data.email;
       if (data.course_duration !== undefined) updateData.course_duration = data.course_duration;
       if (data.college_name !== undefined) updateData.college_name = data.college_name;
+      if ((data as any).academic_department !== undefined) updateData.academic_department = (data as any).academic_department;
       if (data.current_semester !== undefined) updateData.current_semester = data.current_semester;
       if (data.enrollment_number !== undefined) updateData.enrollment_number = data.enrollment_number;
       if (data.class_coordinator_name !== undefined) updateData.class_coordinator_name = data.class_coordinator_name;

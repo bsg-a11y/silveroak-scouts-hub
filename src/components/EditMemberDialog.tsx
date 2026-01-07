@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { Member } from '@/hooks/useMembers';
 import { useColleges } from '@/hooks/useColleges';
+import { getDepartmentsForCollege } from '@/lib/collegeDepartments';
 
 interface EditMemberDialogProps {
   member: Member | null;
@@ -42,6 +43,7 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
     email: '',
     course_duration: '',
     college_name: '',
+    academic_department: '',
     current_semester: '',
     enrollment_number: '',
     whatsapp_number: '',
@@ -50,6 +52,10 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
     hod_name: '',
     principal_name: '',
   });
+
+  const availableDepartments = useMemo(() => {
+    return getDepartmentsForCollege(formData.college_name || '');
+  }, [formData.college_name]);
 
   useEffect(() => {
     if (member) {
@@ -62,6 +68,7 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
         email: member.email || '',
         course_duration: member.course_duration || '',
         college_name: member.college_name || '',
+        academic_department: member.academic_department || '',
         current_semester: member.current_semester?.toString() || '',
         enrollment_number: member.enrollment_number || '',
         whatsapp_number: member.whatsapp_number || '',
@@ -86,6 +93,7 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
       email: formData.email || null,
       course_duration: formData.course_duration || null,
       college_name: formData.college_name || null,
+      academic_department: formData.academic_department || null,
       current_semester: formData.current_semester ? parseInt(formData.current_semester) : null,
       enrollment_number: formData.enrollment_number || null,
       whatsapp_number: formData.whatsapp_number || null,
@@ -93,7 +101,7 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
       class_coordinator_name: formData.class_coordinator_name || null,
       hod_name: formData.hod_name || null,
       principal_name: formData.principal_name || null,
-    } as Partial<Member>);
+    } as any);
     
     setIsSubmitting(false);
     if (result.success) {
@@ -172,9 +180,11 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
                 <SelectValue placeholder="Select duration" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="2 Years">2 Years</SelectItem>
                 <SelectItem value="3 Years">3 Years</SelectItem>
                 <SelectItem value="4 Years">4 Years</SelectItem>
                 <SelectItem value="5 Years">5 Years</SelectItem>
+                <SelectItem value="6 Years">6 Years</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -182,7 +192,7 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
             <Label>College</Label>
             <Select 
               value={formData.college_name} 
-              onValueChange={(v) => setFormData({ ...formData, college_name: v })}
+              onValueChange={(v) => setFormData({ ...formData, college_name: v, academic_department: '' })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select college" />
@@ -196,6 +206,26 @@ export function EditMemberDialog({ member, open, onOpenChange, onSave }: EditMem
               </SelectContent>
             </Select>
           </div>
+          {availableDepartments.length > 0 && (
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select 
+                value={formData.academic_department} 
+                onValueChange={(v) => setFormData({ ...formData, academic_department: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDepartments.map(dept => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Current Semester</Label>
             <Input

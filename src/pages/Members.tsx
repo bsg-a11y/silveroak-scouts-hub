@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getDepartmentsForCollege, COURSE_DURATIONS } from '@/lib/collegeDepartments';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -95,6 +96,7 @@ export default function Members() {
     email: '',
     course_duration: '',
     college_name: '',
+    academic_department: '',
     current_semester: undefined,
     enrollment_number: '',
     whatsapp_number: '',
@@ -104,6 +106,11 @@ export default function Members() {
     hod_name: '',
     principal_name: '',
   });
+
+  // Get departments based on selected college
+  const availableDepartments = useMemo(() => {
+    return getDepartmentsForCollege(formData.college_name || '');
+  }, [formData.college_name]);
   const [facultyFormData, setFacultyFormData] = useState({
     first_name: '',
     middle_name: '',
@@ -170,6 +177,7 @@ export default function Members() {
         email: '',
         course_duration: '',
         college_name: '',
+        academic_department: '',
         current_semester: undefined,
         enrollment_number: '',
         whatsapp_number: '',
@@ -579,9 +587,11 @@ export default function Members() {
                               <SelectValue placeholder="Select duration" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="2 Years">2 Years</SelectItem>
                               <SelectItem value="3 Years">3 Years</SelectItem>
                               <SelectItem value="4 Years">4 Years</SelectItem>
                               <SelectItem value="5 Years">5 Years</SelectItem>
+                              <SelectItem value="6 Years">6 Years</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -589,7 +599,7 @@ export default function Members() {
                           <Label>College *</Label>
                           <Select 
                             value={formData.college_name} 
-                            onValueChange={(v) => setFormData({ ...formData, college_name: v })}
+                            onValueChange={(v) => setFormData({ ...formData, college_name: v, academic_department: '' })}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select college" />
@@ -603,6 +613,26 @@ export default function Members() {
                             </SelectContent>
                           </Select>
                         </div>
+                        {availableDepartments.length > 0 && (
+                          <div className="space-y-2">
+                            <Label>Department</Label>
+                            <Select 
+                              value={formData.academic_department} 
+                              onValueChange={(v) => setFormData({ ...formData, academic_department: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select department" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableDepartments.map(dept => (
+                                  <SelectItem key={dept} value={dept}>
+                                    {dept}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         <div className="space-y-2">
                           <Label htmlFor="enrollment_number">Enrollment Number</Label>
                           <Input
