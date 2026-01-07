@@ -54,6 +54,7 @@ import {
   Copy,
   Key,
   GraduationCap,
+  Users,
 } from 'lucide-react';
 import { useMembers, CreateMemberData, Member } from '@/hooks/useMembers';
 import { useColleges } from '@/hooks/useColleges';
@@ -76,6 +77,7 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [memberTab, setMemberTab] = useState<'members' | 'faculty' | 'all'>('members');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -125,13 +127,31 @@ export default function Members() {
   const { isAdminOrCoordinator, isAdmin } = useAuth();
   const { toast } = useToast();
 
-  // Filter out program officer (BSGSOU000) and faculty coordinators from member count and list
+  // Filter members by type: regular members vs faculty
   const regularMembers = members.filter(m => 
     !m.uid?.startsWith('BSGSOU000') && 
     m.role !== 'faculty_coordinator'
   );
 
-  const filteredMembers = regularMembers.filter(
+  const facultyMembers = members.filter(m => 
+    m.role === 'faculty_coordinator'
+  );
+
+  // Get members based on current tab
+  const tabMembers = useMemo(() => {
+    switch (memberTab) {
+      case 'members':
+        return regularMembers;
+      case 'faculty':
+        return facultyMembers;
+      case 'all':
+        return members.filter(m => !m.uid?.startsWith('BSGSOU000'));
+      default:
+        return regularMembers;
+    }
+  }, [memberTab, members, regularMembers, facultyMembers]);
+
+  const filteredMembers = tabMembers.filter(
     (member) =>
       member.uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -266,7 +286,7 @@ export default function Members() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'bsg_members.csv';
+    a.download = `bsg_${memberTab}.csv`;
     a.click();
   };
 
@@ -739,7 +759,7 @@ export default function Members() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card variant="stat">
             <CardContent className="p-4">
               <p className="text-sm text-muted-foreground">Total Members</p>
@@ -770,15 +790,36 @@ export default function Members() {
               </p>
             </CardContent>
           </Card>
+          <Card variant="stat">
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground">Faculty</p>
+              <p className="text-2xl font-bold font-display text-amber-500">
+                {facultyMembers.length}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Members Table */}
+        {/* Members Table with Tabs */}
         <Card>
           <CardHeader className="border-b border-border/50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <CardTitle>All Members</CardTitle>
-                <CardDescription>A list of all BSG members</CardDescription>
+                <Tabs value={memberTab} onValueChange={(v) => setMemberTab(v as 'members' | 'faculty' | 'all')}>
+                  <TabsList>
+                    <TabsTrigger value="members">
+                      <Users className="h-4 w-4 mr-2" />
+                      Members ({regularMembers.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="faculty">
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      Faculty ({facultyMembers.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="all">
+                      All ({regularMembers.length + facultyMembers.length})
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -800,10 +841,15 @@ export default function Members() {
               </div>
             ) : filteredMembers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <p>No members found</p>
-                {isAdminOrCoordinator && (
+                <p>No {memberTab === 'faculty' ? 'faculty members' : 'members'} found</p>
+                {isAdminOrCoordinator && memberTab === 'members' && (
                   <Button variant="link" onClick={() => setIsAddDialogOpen(true)}>
                     Add your first member
+                  </Button>
+                )}
+                {isAdmin && memberTab === 'faculty' && (
+                  <Button variant="link" onClick={() => setIsFacultyDialogOpen(true)}>
+                    Add your first faculty coordinator
                   </Button>
                 )}
               </div>
@@ -812,10 +858,12 @@ export default function Members() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
-                      <TableHead className="w-[250px]">Member</TableHead>
+                      <TableHead className="w-[250px]">
+                        {memberTab === 'faculty' ? 'Faculty' : 'Member'}
+                      </TableHead>
                       <TableHead>UID</TableHead>
-                      <TableHead>Enrollment</TableHead>
-                      <TableHead>Semester</TableHead>
+                      <TableHead>{memberTab === 'faculty' ? 'College' : 'Enrollment'}</TableHead>
+                      <TableHead>{memberTab === 'faculty' ? 'WhatsApp' : 'Semester'}</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
                       {isAdminOrCoordinator && <TableHead className="text-right">Actions</TableHead>}
@@ -847,8 +895,18 @@ export default function Members() {
                             {member.uid}
                           </code>
                         </TableCell>
-                        <TableCell>{member.enrollment_number || '-'}</TableCell>
-                        <TableCell>{member.current_semester ? `Sem ${member.current_semester}` : '-'}</TableCell>
+                        <TableCell>
+                          {memberTab === 'faculty' 
+                            ? (member.college_name || '-') 
+                            : (member.enrollment_number || '-')
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {memberTab === 'faculty'
+                            ? (member.whatsapp_number || '-')
+                            : (member.current_semester ? `Sem ${member.current_semester}` : '-')
+                          }
+                        </TableCell>
                         <TableCell>
                           <Badge variant={getRoleBadgeVariant(member.role || 'member')}>
                             {ROLE_LABELS[member.role || 'member']}

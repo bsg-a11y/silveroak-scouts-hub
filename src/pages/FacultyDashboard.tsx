@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SecureAvatar } from '@/components/SecureAvatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -19,12 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Calendar, Users, Loader2, CalendarCheck, CalendarX, UserCheck } from 'lucide-react';
+import { Search, Calendar, Users, Loader2, CalendarCheck, CalendarX, UserCheck, Download, Filter, FileText, FileSpreadsheet, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColleges } from '@/hooks/useColleges';
 import { format } from 'date-fns';
+import { getDepartmentsForCollege } from '@/lib/collegeDepartments';
 
 interface ActivityWithRegistrations {
   id: string;
@@ -38,6 +46,7 @@ interface ActivityWithRegistrations {
       first_name: string;
       last_name: string;
       college_name: string | null;
+      academic_department: string | null;
       enrollment_number: string | null;
       whatsapp_number: string | null;
       profile_photo_url: string | null;
@@ -61,6 +70,7 @@ interface AttendanceRecord {
     first_name: string;
     last_name: string;
     college_name: string | null;
+    academic_department: string | null;
     uid: string;
   };
 }
@@ -74,12 +84,25 @@ export default function FacultyDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [collegeFilter, setCollegeFilter] = useState<string>('all');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>('');
   const [activeTab, setActiveTab] = useState('registrations');
 
   // Get faculty's assigned college
   const facultyCollegeId = profile?.faculty_college_id;
   const facultyCollege = colleges.find(c => c.id === facultyCollegeId);
+
+  // Get departments based on selected college filter
+  const availableDepartments = useMemo(() => {
+    if (collegeFilter === 'all') return [];
+    const college = colleges.find(c => c.id === collegeFilter);
+    return getDepartmentsForCollege(college?.name || '');
+  }, [collegeFilter, colleges]);
+
+  // Reset department selection when college changes
+  useEffect(() => {
+    setSelectedDepartments([]);
+  }, [collegeFilter]);
 
   useEffect(() => {
     fetchData();
@@ -113,7 +136,7 @@ export default function FacultyDashboard() {
           if (userIds.length > 0) {
             const { data: profilesData } = await supabase
               .from('profiles')
-              .select('user_id, first_name, last_name, college_name, enrollment_number, whatsapp_number, profile_photo_url, email')
+              .select('user_id, first_name, last_name, college_name, academic_department, enrollment_number, whatsapp_number, profile_photo_url, email')
               .in('user_id', userIds);
             profiles = profilesData || [];
           }
@@ -124,6 +147,7 @@ export default function FacultyDashboard() {
               first_name: 'Unknown',
               last_name: '',
               college_name: null,
+              academic_department: null,
               enrollment_number: null,
               whatsapp_number: null,
               profile_photo_url: null,
@@ -162,7 +186,7 @@ export default function FacultyDashboard() {
       if (attendanceUserIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('user_id, first_name, last_name, college_name, uid')
+          .select('user_id, first_name, last_name, college_name, academic_department, uid')
           .in('user_id', attendanceUserIds);
         attendanceProfiles = profilesData || [];
       }
@@ -183,18 +207,23 @@ export default function FacultyDashboard() {
 
   const selectedActivityData = activities.find(a => a.id === selectedActivity);
 
-  // Filter registrations based on search and college filter
+  // Filter registrations based on search, college filter, and department filter
   const filteredRegistrations = selectedActivityData?.registrations.filter(reg => {
     const matchesSearch = 
       reg.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (reg.profile.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase());
     
+    const collegeMatch = colleges.find(c => c.id === collegeFilter);
     const matchesCollege = 
       collegeFilter === 'all' || 
-      reg.profile.college_name === colleges.find(c => c.id === collegeFilter)?.name;
+      reg.profile.college_name === collegeMatch?.name;
 
-    return matchesSearch && matchesCollege;
+    const matchesDepartment = 
+      selectedDepartments.length === 0 ||
+      selectedDepartments.includes(reg.profile.academic_department || '');
+
+    return matchesSearch && matchesCollege && matchesDepartment;
   }) || [];
 
   // Calculate attendance stats
@@ -267,6 +296,165 @@ export default function FacultyDashboard() {
         percentage: total > 0 ? Math.round((present / total) * 100) : 0,
       };
     }).filter(m => m.total > 0);
+  };
+
+  // Export functions
+  const exportToCSV = () => {
+    const headers = ['S.No', 'Name', 'Enrollment No.', 'College', 'Department', 'Contact', 'Email', 'Registered At'];
+    const rows = filteredRegistrations.map((reg, idx) => [
+      idx + 1,
+      `${reg.profile.first_name} ${reg.profile.last_name}`,
+      reg.profile.enrollment_number || '-',
+      reg.profile.college_name || '-',
+      reg.profile.academic_department || '-',
+      reg.profile.whatsapp_number || '-',
+      reg.profile.email || '-',
+      format(new Date(reg.registered_at), 'PPP'),
+    ]);
+
+    const activityName = selectedActivityData?.name || 'Activity';
+    const csvContent = [
+      `Activity: ${activityName}`,
+      `Date: ${selectedActivityData?.activity_date ? format(new Date(selectedActivityData.activity_date), 'PPP') : '-'}`,
+      collegeFilter !== 'all' ? `College Filter: ${colleges.find(c => c.id === collegeFilter)?.name}` : '',
+      selectedDepartments.length > 0 ? `Department Filter: ${selectedDepartments.join(', ')}` : '',
+      '',
+      headers.join(','),
+      ...rows.map(row => row.join(',')),
+    ].filter(Boolean).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activityName.replace(/\s+/g, '_')}_registrations.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = () => {
+    const headers = ['S.No', 'Name', 'Enrollment No.', 'College', 'Department', 'Contact', 'Email', 'Registered At'];
+    const rows = filteredRegistrations.map((reg, idx) => [
+      idx + 1,
+      `${reg.profile.first_name} ${reg.profile.last_name}`,
+      reg.profile.enrollment_number || '-',
+      reg.profile.college_name || '-',
+      reg.profile.academic_department || '-',
+      reg.profile.whatsapp_number || '-',
+      reg.profile.email || '-',
+      format(new Date(reg.registered_at), 'PPP'),
+    ]);
+
+    const activityName = selectedActivityData?.name || 'Activity';
+    const tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+      <head><meta charset="UTF-8"></head>
+      <body>
+        <h2>${activityName}</h2>
+        <p>Date: ${selectedActivityData?.activity_date ? format(new Date(selectedActivityData.activity_date), 'PPP') : '-'}</p>
+        ${collegeFilter !== 'all' ? `<p>College: ${colleges.find(c => c.id === collegeFilter)?.name}</p>` : ''}
+        ${selectedDepartments.length > 0 ? `<p>Departments: ${selectedDepartments.join(', ')}</p>` : ''}
+        <table border="1">
+          <thead>
+            <tr>${headers.map(h => `<th style="background:#f0f0f0;font-weight:bold;">${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+        <p>Total: ${filteredRegistrations.length}</p>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activityName.replace(/\s+/g, '_')}_registrations.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printPDF = () => {
+    const activityName = selectedActivityData?.name || 'Activity';
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${activityName} - Registrations</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { color: #1a4d2e; margin-bottom: 5px; }
+          .header h2 { color: #333; margin-bottom: 10px; }
+          .info { margin-bottom: 20px; }
+          .info p { margin: 5px 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background: #1a4d2e; color: white; padding: 10px; text-align: left; }
+          td { border: 1px solid #ddd; padding: 8px; }
+          tr:nth-child(even) { background: #f9f9f9; }
+          .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+          .total { margin-top: 20px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>The Bharat Scouts & Guides</h1>
+          <h2>Silver Oak University</h2>
+        </div>
+        <div class="info">
+          <p><strong>Activity:</strong> ${activityName}</p>
+          <p><strong>Date:</strong> ${selectedActivityData?.activity_date ? format(new Date(selectedActivityData.activity_date), 'PPP') : '-'}</p>
+          ${collegeFilter !== 'all' ? `<p><strong>College:</strong> ${colleges.find(c => c.id === collegeFilter)?.name}</p>` : ''}
+          ${selectedDepartments.length > 0 ? `<p><strong>Departments:</strong> ${selectedDepartments.join(', ')}</p>` : ''}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Name</th>
+              <th>Enrollment No.</th>
+              <th>College</th>
+              <th>Department</th>
+              <th>Contact</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredRegistrations.map((reg, idx) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td>${reg.profile.first_name} ${reg.profile.last_name}</td>
+                <td>${reg.profile.enrollment_number || '-'}</td>
+                <td>${reg.profile.college_name || '-'}</td>
+                <td>${reg.profile.academic_department || '-'}</td>
+                <td>${reg.profile.whatsapp_number || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p class="total">Total: ${filteredRegistrations.length}</p>
+        <div class="footer">
+          Generated on ${new Date().toLocaleDateString()} | BSG SOU Administration Portal
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const toggleDepartment = (dept: string) => {
+    setSelectedDepartments(prev => 
+      prev.includes(dept) 
+        ? prev.filter(d => d !== dept)
+        : [...prev, dept]
+    );
   };
 
   if (isLoading) {
@@ -397,7 +585,8 @@ export default function FacultyDashboard() {
                             <Badge variant="outline" className="ml-2">{activity.registrations.length} registered</Badge>
                           </CardDescription>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* College Filter */}
                           <Select value={collegeFilter} onValueChange={setCollegeFilter}>
                             <SelectTrigger className="w-48">
                               <SelectValue placeholder="Filter by college" />
@@ -411,6 +600,54 @@ export default function FacultyDashboard() {
                               ))}
                             </SelectContent>
                           </Select>
+
+                          {/* Department Multi-Select */}
+                          {availableDepartments.length > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-48 justify-start">
+                                  <Filter className="h-4 w-4 mr-2" />
+                                  {selectedDepartments.length > 0 
+                                    ? `${selectedDepartments.length} dept(s)`
+                                    : 'Select departments'
+                                  }
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 p-0" align="start">
+                                <div className="p-2 border-b">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Departments</span>
+                                    {selectedDepartments.length > 0 && (
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-6 px-2 text-xs"
+                                        onClick={() => setSelectedDepartments([])}
+                                      >
+                                        Clear all
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+                                  {availableDepartments.map(dept => (
+                                    <label
+                                      key={dept}
+                                      className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                                    >
+                                      <Checkbox
+                                        checked={selectedDepartments.includes(dept)}
+                                        onCheckedChange={() => toggleDepartment(dept)}
+                                      />
+                                      <span className="text-sm truncate">{dept}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+
+                          {/* Search */}
                           <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -420,8 +657,70 @@ export default function FacultyDashboard() {
                               className="pl-9 w-48"
                             />
                           </div>
+
+                          {/* Export Dropdown */}
+                          {filteredRegistrations.length > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Export
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-40 p-1" align="end">
+                                <Button 
+                                  variant="ghost" 
+                                  className="w-full justify-start text-sm" 
+                                  onClick={exportToCSV}
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Export CSV
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  className="w-full justify-start text-sm" 
+                                  onClick={exportToExcel}
+                                >
+                                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                  Export Excel
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  className="w-full justify-start text-sm" 
+                                  onClick={printPDF}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Print / PDF
+                                </Button>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                       </div>
+
+                      {/* Active Filters Display */}
+                      {(collegeFilter !== 'all' || selectedDepartments.length > 0) && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {collegeFilter !== 'all' && (
+                            <Badge variant="secondary" className="gap-1">
+                              {colleges.find(c => c.id === collegeFilter)?.short_code}
+                              <X 
+                                className="h-3 w-3 cursor-pointer" 
+                                onClick={() => setCollegeFilter('all')}
+                              />
+                            </Badge>
+                          )}
+                          {selectedDepartments.map(dept => (
+                            <Badge key={dept} variant="secondary" className="gap-1">
+                              {dept.length > 20 ? dept.slice(0, 20) + '...' : dept}
+                              <X 
+                                className="h-3 w-3 cursor-pointer" 
+                                onClick={() => toggleDepartment(dept)}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="p-0">
                       {filteredRegistrations.length === 0 ? (
@@ -437,6 +736,7 @@ export default function FacultyDashboard() {
                                 <TableHead className="w-[250px]">Student</TableHead>
                                 <TableHead>Enrollment</TableHead>
                                 <TableHead>College</TableHead>
+                                <TableHead>Department</TableHead>
                                 <TableHead>WhatsApp</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Registered At</TableHead>
@@ -449,27 +749,27 @@ export default function FacultyDashboard() {
                                     <div className="flex items-center gap-3">
                                       <SecureAvatar
                                         src={reg.profile.profile_photo_url}
-                                        fallback={`${reg.profile.first_name[0]}${reg.profile.last_name[0] || ''}`}
+                                        fallback={`${reg.profile.first_name[0]}${reg.profile.last_name[0]}`}
                                         className="h-9 w-9"
+                                        fallbackClassName="text-sm"
                                       />
-                                      <span className="font-medium">
-                                        {reg.profile.first_name} {reg.profile.last_name}
-                                      </span>
+                                      <div>
+                                        <p className="font-medium">
+                                          {reg.profile.first_name} {reg.profile.last_name}
+                                        </p>
+                                      </div>
                                     </div>
                                   </TableCell>
+                                  <TableCell>{reg.profile.enrollment_number || '-'}</TableCell>
+                                  <TableCell>{reg.profile.college_name || '-'}</TableCell>
                                   <TableCell>
-                                    <code className="px-2 py-1 rounded bg-muted text-sm">
-                                      {reg.profile.enrollment_number || '-'}
-                                    </code>
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    {reg.profile.college_name || '-'}
+                                    {reg.profile.academic_department ? (
+                                      <span className="text-xs">{reg.profile.academic_department}</span>
+                                    ) : '-'}
                                   </TableCell>
                                   <TableCell>{reg.profile.whatsapp_number || '-'}</TableCell>
-                                  <TableCell className="text-sm">{reg.profile.email || '-'}</TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {format(new Date(reg.registered_at), 'PP')}
-                                  </TableCell>
+                                  <TableCell className="text-xs">{reg.profile.email || '-'}</TableCell>
+                                  <TableCell className="text-xs">{format(new Date(reg.registered_at), 'PPp')}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>

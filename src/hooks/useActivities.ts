@@ -41,6 +41,8 @@ export interface CreateActivityData {
   status?: string;
   registration_enabled?: boolean;
   capacity?: number;
+  collaboration_college?: string;
+  collaboration_department?: string;
 }
 
 export function useActivities() {
@@ -109,6 +111,8 @@ export function useActivities() {
           registration_enabled: data.registration_enabled ?? true,
           capacity: data.capacity || null,
           created_by: user?.id,
+          collaboration_college: data.collaboration_college || null,
+          collaboration_department: data.collaboration_department || null,
         });
 
       if (error) throw error;
