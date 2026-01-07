@@ -18,7 +18,8 @@ import {
   CalendarDays,
   Bell,
   Lightbulb,
-  UsersRound
+  UsersRound,
+  ListTodo,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ const mainNavItems = [
   { icon: Users, label: 'Members', path: '/members', adminOnly: true },
   { icon: UsersRound, label: 'Our Team', path: '/our-team' },
   { icon: Calendar, label: 'Activities', path: '/activities' },
+  { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: Megaphone, label: 'Announcements', path: '/announcements' },
   { icon: CalendarDays, label: 'Meetings', path: '/meetings' },
   { icon: ClipboardList, label: 'Attendance', path: '/attendance' },

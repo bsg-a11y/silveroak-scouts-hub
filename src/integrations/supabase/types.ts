@@ -19,6 +19,8 @@ export type Database = {
           activity_date: string
           activity_time: string | null
           capacity: number | null
+          collaboration_college: string | null
+          collaboration_department: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -33,6 +35,8 @@ export type Database = {
           activity_date: string
           activity_time?: string | null
           capacity?: number | null
+          collaboration_college?: string | null
+          collaboration_department?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -47,6 +51,8 @@ export type Database = {
           activity_date?: string
           activity_time?: string | null
           capacity?: number | null
+          collaboration_college?: string | null
+          collaboration_department?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -678,6 +684,86 @@ export type Database = {
           total_quantity?: number
           unit?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      task_comments: {
+        Row: {
+          comment: string
+          created_at: string | null
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string | null
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          assigned_by: string | null
+          assigned_to: string
+          category: string
+          comments: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          file_url: string | null
+          id: string
+          name: string
+          status: string
+          task_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_to: string
+          category: string
+          comments?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          file_url?: string | null
+          id?: string
+          name: string
+          status?: string
+          task_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_to?: string
+          category?: string
+          comments?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          file_url?: string | null
+          id?: string
+          name?: string
+          status?: string
+          task_type?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

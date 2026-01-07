@@ -12,6 +12,7 @@ interface SecureAvatarProps {
 
 /**
  * Avatar component that handles signed URLs for private storage buckets
+ * Supports both full URLs and path-only format (e.g., "userId/timestamp.ext")
  */
 export function SecureAvatar({ src, fallback, className, fallbackClassName }: SecureAvatarProps) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -19,6 +20,33 @@ export function SecureAvatar({ src, fallback, className, fallbackClassName }: Se
   useEffect(() => {
     if (!src) {
       setSignedUrl(null);
+      return;
+    }
+
+    // Check if it's a full URL or just a path
+    const isFullUrl = src.startsWith('http://') || src.startsWith('https://');
+    
+    if (!isFullUrl) {
+      // It's just a path - fetch signed URL from avatars bucket directly
+      const getSignedUrl = async () => {
+        try {
+          const { data, error } = await supabase.storage
+            .from('avatars')
+            .createSignedUrl(src, 3600);
+
+          if (error) {
+            console.error('Failed to get signed URL for avatar:', error);
+            setSignedUrl(null);
+          } else {
+            setSignedUrl(data.signedUrl);
+          }
+        } catch (err) {
+          console.error('Error getting signed URL:', err);
+          setSignedUrl(null);
+        }
+      };
+
+      getSignedUrl();
       return;
     }
 
