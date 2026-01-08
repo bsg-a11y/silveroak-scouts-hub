@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { ROLE_LABELS, type UserRole } from '@/types';
 import { format } from 'date-fns';
+import bsgLogo from '@/assets/bsg-logo.png';
 
 interface FullProfile {
   id: string;
@@ -174,8 +175,9 @@ export default function Profile() {
         <Card>
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
-              {/* Avatar & Basic Info */}
-              <div className="flex flex-col items-center md:items-start">
+              {/* Logo & Avatar */}
+              <div className="flex flex-col items-center md:items-start gap-4">
+                <img src={bsgLogo} alt="BSG Logo" className="h-16 w-16 object-contain" />
                 <ProfilePhotoUpload
                   currentPhotoUrl={fullProfile.profile_photo_url}
                   userId={user?.id || ''}

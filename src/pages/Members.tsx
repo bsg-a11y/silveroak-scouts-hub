@@ -874,6 +874,7 @@ export default function Members() {
                       <TableHead>UID</TableHead>
                       <TableHead>{memberTab === 'faculty' ? 'College' : 'Enrollment'}</TableHead>
                       <TableHead>{memberTab === 'faculty' ? 'WhatsApp' : 'Semester'}</TableHead>
+                      <TableHead>Joining Date</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
                       {isAdminOrCoordinator && <TableHead className="text-right">Actions</TableHead>}
@@ -915,6 +916,12 @@ export default function Members() {
                           {memberTab === 'faculty'
                             ? (member.whatsapp_number || '-')
                             : (member.current_semester ? `Sem ${member.current_semester}` : '-')
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {member.joining_date 
+                            ? new Date(member.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                            : '-'
                           }
                         </TableCell>
                         <TableCell>
