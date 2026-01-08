@@ -20,10 +20,12 @@ import {
   Lightbulb,
   UsersRound,
   ListTodo,
+  BoxIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import bsgLogo from '@/assets/bsg-logo.png';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -41,6 +43,7 @@ const mainNavItems = [
   { icon: CalendarDays, label: 'Meetings', path: '/meetings' },
   { icon: ClipboardList, label: 'Attendance', path: '/attendance' },
   { icon: FileText, label: 'Leave Requests', path: '/leaves' },
+  { icon: BoxIcon, label: 'Collection Drives', path: '/collection-drives', adminOnly: true },
   { icon: PackageSearch, label: 'Inventory', path: '/inventory', adminOnly: true },
   { icon: Award, label: 'Certificates', path: '/certificates' },
   { icon: Lightbulb, label: 'Suggestions', path: '/suggestions' },
@@ -87,9 +90,7 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
       <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sidebar-primary-foreground font-bold text-lg">BSG</span>
-            </div>
+            <img src={bsgLogo} alt="BSG Logo" className="w-10 h-10 rounded-lg object-contain" />
             <div className="flex flex-col">
               <span className="text-sidebar-foreground font-semibold text-sm leading-tight">
                 Bharat Scouts
@@ -102,9 +103,7 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
         )}
         
         {collapsed && (
-          <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto">
-            <span className="text-sidebar-primary-foreground font-bold text-lg">B</span>
-          </div>
+          <img src={bsgLogo} alt="BSG Logo" className="w-10 h-10 rounded-lg object-contain mx-auto" />
         )}
 
         {/* Toggle/Close Button */}

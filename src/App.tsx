@@ -23,6 +23,7 @@ import Suggestions from "./pages/Suggestions";
 import OurTeam from "./pages/OurTeam";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import Tasks from "./pages/Tasks";
+import CollectionDrives from "./pages/CollectionDrives";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
+            <Route path="/collection-drives" element={<ProtectedRoute><CollectionDrives /></ProtectedRoute>} />
             <Route path="/faculty-dashboard" element={<ProtectedRoute requiredRoles={['faculty_coordinator']}><FacultyDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

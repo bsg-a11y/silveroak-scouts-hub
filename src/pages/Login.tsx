@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Eye, EyeOff, Shield, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import bsgLogo from '@/assets/bsg-logo.png';
 
 export default function Login() {
   const [uid, setUid] = useState('');
@@ -74,7 +75,7 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-center items-center px-12 text-center">
           {/* Logo */}
           <div className="w-24 h-24 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-8 border border-white/20">
-            <span className="text-4xl font-bold text-white font-display">BSG</span>
+            <img src={bsgLogo} alt="BSG Logo" className="w-20 h-20 object-contain" />
           </div>
 
           <h1 className="text-4xl font-bold text-white font-display mb-4">
@@ -108,9 +109,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-xl bg-primary flex items-center justify-center mb-4">
-              <span className="text-2xl font-bold text-primary-foreground font-display">BSG</span>
-            </div>
+            <img src={bsgLogo} alt="BSG Logo" className="w-16 h-16 rounded-xl object-contain mb-4" />
             <h1 className="text-xl font-bold text-foreground font-display text-center">
               The Bharat Scouts & Guides
             </h1>
