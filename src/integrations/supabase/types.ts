@@ -324,6 +324,98 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_drives: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          drive_date: string | null
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          drive_date?: string | null
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          drive_date?: string | null
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      collection_receipts: {
+        Row: {
+          collected_by: string | null
+          collection_date: string
+          created_at: string
+          donor_college: string | null
+          donor_name: string | null
+          donor_type: string
+          donor_whatsapp: string | null
+          drive_id: string | null
+          id: string
+          item_type: string
+          member_id: string | null
+          notes: string | null
+          quantity: number
+          receipt_number: string
+          unit: string | null
+        }
+        Insert: {
+          collected_by?: string | null
+          collection_date?: string
+          created_at?: string
+          donor_college?: string | null
+          donor_name?: string | null
+          donor_type: string
+          donor_whatsapp?: string | null
+          drive_id?: string | null
+          id?: string
+          item_type: string
+          member_id?: string | null
+          notes?: string | null
+          quantity?: number
+          receipt_number: string
+          unit?: string | null
+        }
+        Update: {
+          collected_by?: string | null
+          collection_date?: string
+          created_at?: string
+          donor_college?: string | null
+          donor_name?: string | null
+          donor_type?: string
+          donor_whatsapp?: string | null
+          drive_id?: string | null
+          id?: string
+          item_type?: string
+          member_id?: string | null
+          notes?: string | null
+          quantity?: number
+          receipt_number?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_receipts_drive_id_fkey"
+            columns: ["drive_id"]
+            isOneToOne: false
+            referencedRelation: "collection_drives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       colleges: {
         Row: {
           created_at: string
@@ -876,6 +968,7 @@ export type Database = {
       }
       generate_next_uid: { Args: never; Returns: string }
       generate_next_uid_for: { Args: { _caller: string }; Returns: string }
+      generate_receipt_number: { Args: never; Returns: string }
       get_faculty_college_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
