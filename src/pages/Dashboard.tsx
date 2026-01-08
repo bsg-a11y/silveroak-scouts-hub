@@ -22,6 +22,7 @@ import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import bsgLogo from '@/assets/bsg-logo.png';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -71,13 +72,16 @@ export default function Dashboard() {
       <div className="space-y-6 animate-fade-in">
         {/* Welcome Section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-display text-foreground">
-              Welcome back, {profile?.first_name || 'User'}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's what's happening with BSG today.
-            </p>
+          <div className="flex items-center gap-4">
+            <img src={bsgLogo} alt="BSG Logo" className="h-14 w-14 object-contain" />
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold font-display text-foreground">
+                Welcome back, {profile?.first_name || 'User'}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Here's what's happening with BSG today.
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate('/announcements')}>

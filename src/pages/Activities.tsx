@@ -50,6 +50,7 @@ import {
   Pencil,
   Trash2,
   Building2,
+  CheckCircle2,
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -160,21 +161,40 @@ export default function Activities() {
     }
   };
 
-  const handleEditActivity = (activity: typeof activities[0]) => {
-    setEditingActivity(activity);
-    setFormData({
-      name: activity.name,
-      description: activity.description || '',
-      activity_date: activity.activity_date,
-      activity_time: activity.activity_time || '',
-      location: activity.location || '',
-      capacity: activity.capacity || undefined,
-      registration_enabled: activity.registration_enabled,
-      status: activity.status,
-      collaboration_college: (activity as any).collaboration_college || '',
-      collaboration_department: (activity as any).collaboration_department || '',
-    });
-    setIsEditDialogOpen(true);
+  const handleEditActivity = (activity: typeof activities[0], e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // Close any open dialogs first
+    setSelectedDateActivities([]);
+    setViewRegistrationsDialog(null);
+    
+    // Use setTimeout to ensure the previous dialog is fully closed
+    setTimeout(() => {
+      setEditingActivity(activity);
+      setFormData({
+        name: activity.name,
+        description: activity.description || '',
+        activity_date: activity.activity_date,
+        activity_time: activity.activity_time || '',
+        location: activity.location || '',
+        capacity: activity.capacity || undefined,
+        registration_enabled: activity.registration_enabled,
+        status: activity.status,
+        collaboration_college: (activity as any).collaboration_college || '',
+        collaboration_department: (activity as any).collaboration_department || '',
+      });
+      setIsEditDialogOpen(true);
+    }, 50);
+  };
+
+  const handleMarkAsDone = async (activityId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    await updateActivity(activityId, { status: 'completed' });
   };
 
   const handleUpdateActivity = async () => {
@@ -543,10 +563,13 @@ export default function Activities() {
                         <div className="flex items-center gap-1">
                           {isAdminOrCoordinator && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditActivity(activity)}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => handleEditActivity(activity, e)} title="Edit">
                                 <Pencil className="h-3 w-3" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteActivityId(activity.id)}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-bsg-green" onClick={(e) => handleMarkAsDone(activity.id, e)} title="Mark as Done">
+                                <CheckCircle2 className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteActivityId(activity.id)} title="Delete">
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </>
@@ -654,10 +677,15 @@ export default function Activities() {
                       <div className="flex items-center gap-1">
                         {isAdminOrCoordinator && (
                           <>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { handleEditActivity(activity); setSelectedDateActivities([]); }}>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => handleEditActivity(activity, e)} title="Edit">
                               <Pencil className="h-3 w-3" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => { setDeleteActivityId(activity.id); setSelectedDateActivities([]); }}>
+                            {activity.status === 'upcoming' && (
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-bsg-green" onClick={(e) => handleMarkAsDone(activity.id, e)} title="Mark as Done">
+                                <CheckCircle2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => { setDeleteActivityId(activity.id); setSelectedDateActivities([]); }} title="Delete">
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </>
