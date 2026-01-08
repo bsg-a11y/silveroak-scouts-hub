@@ -541,6 +541,7 @@ export type Database = {
           hod_name: string | null
           id: string
           is_program_officer: boolean | null
+          joining_date: string | null
           last_name: string
           middle_name: string | null
           principal_name: string | null
@@ -570,6 +571,7 @@ export type Database = {
           hod_name?: string | null
           id?: string
           is_program_officer?: boolean | null
+          joining_date?: string | null
           last_name: string
           middle_name?: string | null
           principal_name?: string | null
@@ -599,6 +601,7 @@ export type Database = {
           hod_name?: string | null
           id?: string
           is_program_officer?: boolean | null
+          joining_date?: string | null
           last_name?: string
           middle_name?: string | null
           principal_name?: string | null

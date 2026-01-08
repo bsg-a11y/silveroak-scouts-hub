@@ -107,6 +107,7 @@ export default function Members() {
     class_coordinator_name: '',
     hod_name: '',
     principal_name: '',
+    joining_date: '',
   });
 
   // Get departments based on selected college
@@ -206,6 +207,7 @@ export default function Members() {
         class_coordinator_name: '',
         hod_name: '',
         principal_name: '',
+        joining_date: '',
       });
     }
   };
@@ -586,6 +588,14 @@ export default function Members() {
                             type="date"
                             value={formData.date_of_birth}
                             onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Joining Date</Label>
+                          <Input
+                            type="date"
+                            value={formData.joining_date}
+                            onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
                           />
                         </div>
                         <div className="space-y-2">

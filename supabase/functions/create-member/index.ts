@@ -26,6 +26,7 @@ interface CreateMemberRequest {
   aadhaar_number?: string;
   blood_group?: string;
   role?: string;
+  joining_date?: string;
 }
 
 Deno.serve(async (req) => {
@@ -218,6 +219,7 @@ Deno.serve(async (req) => {
       whatsapp_number: body.whatsapp_number || null,
       aadhaar_number: body.aadhaar_number || null,
       blood_group: body.blood_group || null,
+      joining_date: body.joining_date || null,
     });
 
     if (profileError) {
