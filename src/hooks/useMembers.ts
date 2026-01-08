@@ -29,6 +29,7 @@ export interface Member {
   updated_at: string;
   role?: string;
   email?: string | null;
+  joining_date?: string | null;
 }
 
 export interface CreateMemberData {
@@ -52,6 +53,7 @@ export interface CreateMemberData {
   aadhaar_number?: string;
   blood_group?: string;
   role?: string;
+  joining_date?: string;
 }
 
 export function useMembers() {
@@ -65,7 +67,7 @@ export function useMembers() {
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('uid', { ascending: true });
 
       if (profilesError) throw profilesError;
 
@@ -157,6 +159,7 @@ export function useMembers() {
           aadhaar_number: validatedData.aadhaar_number || null,
           blood_group: validatedData.blood_group || null,
           role: validatedData.role || 'member',
+          joining_date: data.joining_date || null,
         },
       });
 
@@ -208,6 +211,7 @@ export function useMembers() {
       if (data.whatsapp_number !== undefined) updateData.whatsapp_number = data.whatsapp_number;
       if (data.aadhaar_number !== undefined) updateData.aadhaar_number = data.aadhaar_number;
       if (data.blood_group !== undefined) updateData.blood_group = data.blood_group;
+      if (data.joining_date !== undefined) updateData.joining_date = data.joining_date;
 
       const { error } = await supabase
         .from('profiles')

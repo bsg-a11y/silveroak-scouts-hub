@@ -27,12 +27,12 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Calendar, Users, Loader2, CalendarCheck, CalendarX, UserCheck, Download, Filter, FileText, FileSpreadsheet, X } from 'lucide-react';
+import { Search, Calendar, Users, Loader2, CalendarCheck, CalendarX, UserCheck, Download, Filter, FileText, FileSpreadsheet, X, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColleges } from '@/hooks/useColleges';
 import { format } from 'date-fns';
-import { getDepartmentsForCollege } from '@/lib/collegeDepartments';
+import { COLLEGE_DEPARTMENTS, getDepartmentsForCollege } from '@/lib/collegeDepartments';
 
 interface ActivityWithRegistrations {
   id: string;
@@ -83,7 +83,7 @@ export default function FacultyDashboard() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [collegeFilter, setCollegeFilter] = useState<string>('all');
+  const [selectedColleges, setSelectedColleges] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<string>('');
   const [activeTab, setActiveTab] = useState('registrations');
@@ -92,17 +92,21 @@ export default function FacultyDashboard() {
   const facultyCollegeId = profile?.faculty_college_id;
   const facultyCollege = colleges.find(c => c.id === facultyCollegeId);
 
-  // Get departments based on selected college filter
-  const availableDepartments = useMemo(() => {
-    if (collegeFilter === 'all') return [];
-    const college = colleges.find(c => c.id === collegeFilter);
-    return getDepartmentsForCollege(college?.name || '');
-  }, [collegeFilter, colleges]);
+  // Get all available college names from the mapping
+  const allColleges = Object.keys(COLLEGE_DEPARTMENTS);
 
-  // Reset department selection when college changes
+  // Get departments based on selected colleges
+  const availableDepartments = useMemo(() => {
+    if (selectedColleges.length === 0) return [];
+    // Combine all departments from selected colleges
+    const allDepts = selectedColleges.flatMap(collegeName => getDepartmentsForCollege(collegeName));
+    return [...new Set(allDepts)]; // Remove duplicates
+  }, [selectedColleges]);
+
+  // Reset department selection when colleges change
   useEffect(() => {
     setSelectedDepartments([]);
-  }, [collegeFilter]);
+  }, [selectedColleges]);
 
   useEffect(() => {
     fetchData();
@@ -214,10 +218,9 @@ export default function FacultyDashboard() {
       reg.profile.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (reg.profile.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase());
     
-    const collegeMatch = colleges.find(c => c.id === collegeFilter);
     const matchesCollege = 
-      collegeFilter === 'all' || 
-      reg.profile.college_name === collegeMatch?.name;
+      selectedColleges.length === 0 || 
+      selectedColleges.includes(reg.profile.college_name || '');
 
     const matchesDepartment = 
       selectedDepartments.length === 0 ||
@@ -316,7 +319,7 @@ export default function FacultyDashboard() {
     const csvContent = [
       `Activity: ${activityName}`,
       `Date: ${selectedActivityData?.activity_date ? format(new Date(selectedActivityData.activity_date), 'PPP') : '-'}`,
-      collegeFilter !== 'all' ? `College Filter: ${colleges.find(c => c.id === collegeFilter)?.name}` : '',
+      selectedColleges.length > 0 ? `College Filter: ${selectedColleges.join(', ')}` : '',
       selectedDepartments.length > 0 ? `Department Filter: ${selectedDepartments.join(', ')}` : '',
       '',
       headers.join(','),
@@ -352,7 +355,7 @@ export default function FacultyDashboard() {
       <body>
         <h2>${activityName}</h2>
         <p>Date: ${selectedActivityData?.activity_date ? format(new Date(selectedActivityData.activity_date), 'PPP') : '-'}</p>
-        ${collegeFilter !== 'all' ? `<p>College: ${colleges.find(c => c.id === collegeFilter)?.name}</p>` : ''}
+        ${selectedColleges.length > 0 ? `<p>Colleges: ${selectedColleges.join(', ')}</p>` : ''}
         ${selectedDepartments.length > 0 ? `<p>Departments: ${selectedDepartments.join(', ')}</p>` : ''}
         <table border="1">
           <thead>
@@ -406,7 +409,7 @@ export default function FacultyDashboard() {
         <div class="info">
           <p><strong>Activity:</strong> ${activityName}</p>
           <p><strong>Date:</strong> ${selectedActivityData?.activity_date ? format(new Date(selectedActivityData.activity_date), 'PPP') : '-'}</p>
-          ${collegeFilter !== 'all' ? `<p><strong>College:</strong> ${colleges.find(c => c.id === collegeFilter)?.name}</p>` : ''}
+          ${selectedColleges.length > 0 ? `<p><strong>Colleges:</strong> ${selectedColleges.join(', ')}</p>` : ''}
           ${selectedDepartments.length > 0 ? `<p><strong>Departments:</strong> ${selectedDepartments.join(', ')}</p>` : ''}
         </div>
         <table>
@@ -454,6 +457,14 @@ export default function FacultyDashboard() {
       prev.includes(dept) 
         ? prev.filter(d => d !== dept)
         : [...prev, dept]
+    );
+  };
+
+  const toggleCollege = (collegeName: string) => {
+    setSelectedColleges(prev => 
+      prev.includes(collegeName) 
+        ? prev.filter(c => c !== collegeName)
+        : [...prev, collegeName]
     );
   };
 
@@ -586,20 +597,49 @@ export default function FacultyDashboard() {
                           </CardDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
-                          {/* College Filter */}
-                          <Select value={collegeFilter} onValueChange={setCollegeFilter}>
-                            <SelectTrigger className="w-48">
-                              <SelectValue placeholder="Filter by college" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Colleges</SelectItem>
-                              {colleges.map(college => (
-                                <SelectItem key={college.id} value={college.id}>
-                                  {college.short_code}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {/* College Multi-Select */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-48 justify-start">
+                                <Building2 className="h-4 w-4 mr-2" />
+                                {selectedColleges.length > 0 
+                                  ? `${selectedColleges.length} college(s)`
+                                  : 'All Colleges'
+                                }
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0" align="start">
+                              <div className="p-2 border-b">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium">Colleges</span>
+                                  {selectedColleges.length > 0 && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-6 px-2 text-xs"
+                                      onClick={() => setSelectedColleges([])}
+                                    >
+                                      Clear all
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+                                {allColleges.map(collegeName => (
+                                  <label
+                                    key={collegeName}
+                                    className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                                  >
+                                    <Checkbox
+                                      checked={selectedColleges.includes(collegeName)}
+                                      onCheckedChange={() => toggleCollege(collegeName)}
+                                    />
+                                    <span className="text-sm truncate">{collegeName}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
 
                           {/* Department Multi-Select */}
                           {availableDepartments.length > 0 && (
@@ -699,17 +739,17 @@ export default function FacultyDashboard() {
                       </div>
 
                       {/* Active Filters Display */}
-                      {(collegeFilter !== 'all' || selectedDepartments.length > 0) && (
+                      {(selectedColleges.length > 0 || selectedDepartments.length > 0) && (
                         <div className="flex flex-wrap gap-2 mt-3">
-                          {collegeFilter !== 'all' && (
-                            <Badge variant="secondary" className="gap-1">
-                              {colleges.find(c => c.id === collegeFilter)?.short_code}
+                          {selectedColleges.map(college => (
+                            <Badge key={college} variant="secondary" className="gap-1">
+                              {college.length > 25 ? college.slice(0, 25) + '...' : college}
                               <X 
                                 className="h-3 w-3 cursor-pointer" 
-                                onClick={() => setCollegeFilter('all')}
+                                onClick={() => toggleCollege(college)}
                               />
                             </Badge>
-                          )}
+                          ))}
                           {selectedDepartments.map(dept => (
                             <Badge key={dept} variant="secondary" className="gap-1">
                               {dept.length > 20 ? dept.slice(0, 20) + '...' : dept}
