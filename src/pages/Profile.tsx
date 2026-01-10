@@ -200,7 +200,7 @@ export default function Profile() {
                       <Badge variant={fullProfile.status === 'active' ? 'active' : 'inactive'}>
                         {fullProfile.status === 'active' ? 'Active Member' : 'Inactive'}
                       </Badge>
-                      <Badge variant="member">
+                      <Badge variant={userRole === 'admin' ? 'admin' : userRole === 'coordinator' ? 'coordinator' : userRole === 'executive' ? 'executive' : userRole === 'core' ? 'core' : userRole === 'faculty_coordinator' ? 'coordinator' : 'member'}>
                         {ROLE_LABELS[userRole]}
                       </Badge>
                     </div>

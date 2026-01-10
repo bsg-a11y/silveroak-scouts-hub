@@ -1,25 +1,28 @@
-// User Role Types
+// User Role Types - matches database enum
 export type UserRole = 
   | 'admin' 
-  | 'institute_coordinator' 
-  | 'executive_committee' 
-  | 'core_committee' 
-  | 'member';
+  | 'coordinator' 
+  | 'executive' 
+  | 'core' 
+  | 'member'
+  | 'faculty_coordinator';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Admin',
-  institute_coordinator: 'Institute Coordinator',
-  executive_committee: 'Executive Committee',
-  core_committee: 'Core Committee',
+  coordinator: 'Coordinator',
+  executive: 'Executive',
+  core: 'Core Committee',
   member: 'Member',
+  faculty_coordinator: 'Faculty Coordinator',
 };
 
 export const ROLE_COLORS: Record<UserRole, string> = {
   admin: 'admin',
-  institute_coordinator: 'coordinator',
-  executive_committee: 'executive',
-  core_committee: 'core',
+  coordinator: 'coordinator',
+  executive: 'executive',
+  core: 'core',
   member: 'member',
+  faculty_coordinator: 'coordinator',
 };
 
 // Member Types
