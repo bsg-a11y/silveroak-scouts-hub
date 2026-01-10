@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,12 +43,15 @@ import {
   AlertCircle,
   Trash2,
   FileText,
+  Download,
+  ExternalLink,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useTasks, TASK_CATEGORIES, TASK_TYPES, TASK_STATUSES, CreateTaskData } from '@/hooks/useTasks';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
@@ -60,6 +63,54 @@ const getStatusBadgeVariant = (status: string) => {
     default: return 'secondary';
   }
 };
+
+// Component to download task files with signed URL
+function TaskFileDownloadButton({ fileUrl }: { fileUrl: string }) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const getSignedUrl = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.storage
+          .from('task-files')
+          .createSignedUrl(fileUrl, 3600);
+
+        if (error) {
+          console.error('Failed to get signed URL:', error);
+        } else {
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.error('Error getting signed URL:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getSignedUrl();
+  }, [fileUrl]);
+
+  if (isLoading) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <Loader2 className="h-3 w-3 animate-spin" />
+      </Button>
+    );
+  }
+
+  if (!signedUrl) return null;
+
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <a href={signedUrl} target="_blank" rel="noopener noreferrer">
+        <ExternalLink className="h-3 w-3 mr-1" />
+        View File
+      </a>
+    </Button>
+  );
+}
 
 export default function Tasks() {
   const { tasks, isLoading, createTask, updateTaskStatus, uploadTaskFile, deleteTask, addComment, fetchTaskComments } = useTasks();
@@ -555,9 +606,14 @@ export default function Tasks() {
                 </div>
 
                 {selectedTaskData.file_url && (
-                  <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm">File uploaded</span>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span className="text-sm">File uploaded</span>
+                      </div>
+                      <TaskFileDownloadButton fileUrl={selectedTaskData.file_url} />
+                    </div>
                   </div>
                 )}
 
