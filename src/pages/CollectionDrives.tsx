@@ -220,7 +220,21 @@ export default function CollectionDrives() {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={isAddReceiptOpen} onOpenChange={setIsAddReceiptOpen}>
+              <Dialog 
+                open={isAddReceiptOpen} 
+                onOpenChange={(open) => {
+                  setIsAddReceiptOpen(open);
+                  if (!open) {
+                    setReceiptForm({
+                      donor_type: 'internal',
+                      item_type: '',
+                      quantity: 1,
+                      unit: 'pieces',
+                    });
+                  }
+                }}
+                modal={true}
+              >
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />

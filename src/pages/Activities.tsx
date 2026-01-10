@@ -166,27 +166,26 @@ export default function Activities() {
       e.preventDefault();
       e.stopPropagation();
     }
-    // Close any open dialogs first
+    
+    // Set the editing activity and form data first
+    setEditingActivity(activity);
+    setFormData({
+      name: activity.name,
+      description: activity.description || '',
+      activity_date: activity.activity_date,
+      activity_time: activity.activity_time || '',
+      location: activity.location || '',
+      capacity: activity.capacity || undefined,
+      registration_enabled: activity.registration_enabled,
+      status: activity.status,
+      collaboration_college: (activity as any).collaboration_college || '',
+      collaboration_department: (activity as any).collaboration_department || '',
+    });
+    
+    // Close other dialogs and open edit dialog
     setSelectedDateActivities([]);
     setViewRegistrationsDialog(null);
-    
-    // Use setTimeout to ensure the previous dialog is fully closed
-    setTimeout(() => {
-      setEditingActivity(activity);
-      setFormData({
-        name: activity.name,
-        description: activity.description || '',
-        activity_date: activity.activity_date,
-        activity_time: activity.activity_time || '',
-        location: activity.location || '',
-        capacity: activity.capacity || undefined,
-        registration_enabled: activity.registration_enabled,
-        status: activity.status,
-        collaboration_college: (activity as any).collaboration_college || '',
-        collaboration_department: (activity as any).collaboration_department || '',
-      });
-      setIsEditDialogOpen(true);
-    }, 50);
+    setIsEditDialogOpen(true);
   };
 
   const handleMarkAsDone = async (activityId: string, e?: React.MouseEvent) => {
@@ -731,7 +730,17 @@ export default function Activities() {
         </Dialog>
 
         {/* Edit Activity Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setEditingActivity(null); resetFormData(); } }}>
+        <Dialog 
+          open={isEditDialogOpen} 
+          onOpenChange={(open) => { 
+            if (!open) { 
+              setIsEditDialogOpen(false);
+              setEditingActivity(null); 
+              resetFormData(); 
+            } 
+          }}
+          modal={true}
+        >
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Edit Activity</DialogTitle>
