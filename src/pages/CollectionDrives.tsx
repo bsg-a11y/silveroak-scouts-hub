@@ -251,14 +251,17 @@ export default function CollectionDrives() {
                     <div className="space-y-2">
                       <Label>Collection Drive</Label>
                       <Select 
-                        value={receiptForm.drive_id || ''} 
-                        onValueChange={(v) => setReceiptForm({ ...receiptForm, drive_id: v || undefined })}
+                        value={receiptForm.drive_id || ''}
+                        onValueChange={(v) => {
+                          const value = v === '__none__' ? undefined : v;
+                          setReceiptForm({ ...receiptForm, drive_id: value });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select drive (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No specific drive</SelectItem>
+                          <SelectItem value="__none__">No specific drive</SelectItem>
                           {drives.map(drive => (
                             <SelectItem key={drive.id} value={drive.id}>{drive.name}</SelectItem>
                           ))}

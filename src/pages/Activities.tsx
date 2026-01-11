@@ -317,14 +317,17 @@ export default function Activities() {
           <div className="space-y-2">
             <Label>Collaboration College</Label>
             <Select 
-              value={formData.collaboration_college} 
-              onValueChange={(v) => setFormData({ ...formData, collaboration_college: v, collaboration_department: '' })}
+              value={formData.collaboration_college}
+              onValueChange={(v) => {
+                const value = v === '__none__' ? '' : v;
+                setFormData({ ...formData, collaboration_college: value, collaboration_department: '' });
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select college" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {colleges.map(college => (
                   <SelectItem key={college.id} value={college.name}>
                     <div className="flex items-center gap-2">
@@ -342,15 +345,18 @@ export default function Activities() {
           <div className="space-y-2">
             <Label>Collaboration Department</Label>
             <Select 
-              value={formData.collaboration_department} 
-              onValueChange={(v) => setFormData({ ...formData, collaboration_department: v })}
+              value={formData.collaboration_department}
+              onValueChange={(v) => {
+                const value = v === '__none__' ? '' : v;
+                setFormData({ ...formData, collaboration_department: value });
+              }}
               disabled={!formData.collaboration_college || collaborationDepartments.length === 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder={collaborationDepartments.length > 0 ? "Select department" : "Select college first"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {collaborationDepartments.map(dept => (
                   <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                 ))}
