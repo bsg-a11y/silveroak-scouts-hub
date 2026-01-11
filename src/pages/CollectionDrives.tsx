@@ -251,7 +251,7 @@ export default function CollectionDrives() {
                     <div className="space-y-2">
                       <Label>Collection Drive</Label>
                       <Select 
-                        value={receiptForm.drive_id || ''}
+                        value={receiptForm.drive_id ?? '__none__'}
                         onValueChange={(v) => {
                           const value = v === '__none__' ? undefined : v;
                           setReceiptForm({ ...receiptForm, drive_id: value });
@@ -298,7 +298,7 @@ export default function CollectionDrives() {
                       <div className="space-y-2">
                         <Label>Select Member *</Label>
                         <Select 
-                          value={receiptForm.member_id || ''} 
+                          value={receiptForm.member_id} 
                           onValueChange={(v) => setReceiptForm({ ...receiptForm, member_id: v })}
                         >
                           <SelectTrigger>
@@ -359,7 +359,7 @@ export default function CollectionDrives() {
                       <div className="space-y-2">
                         <Label>Item Type *</Label>
                         <Select 
-                          value={receiptForm.item_type} 
+                          value={receiptForm.item_type || undefined} 
                           onValueChange={(v) => setReceiptForm({ ...receiptForm, item_type: v })}
                         >
                           <SelectTrigger>

@@ -317,7 +317,7 @@ export default function Activities() {
           <div className="space-y-2">
             <Label>Collaboration College</Label>
             <Select 
-              value={formData.collaboration_college}
+              value={formData.collaboration_college ? formData.collaboration_college : '__none__'}
               onValueChange={(v) => {
                 const value = v === '__none__' ? '' : v;
                 setFormData({ ...formData, collaboration_college: value, collaboration_department: '' });
@@ -345,7 +345,7 @@ export default function Activities() {
           <div className="space-y-2">
             <Label>Collaboration Department</Label>
             <Select 
-              value={formData.collaboration_department}
+              value={formData.collaboration_department ? formData.collaboration_department : '__none__'}
               onValueChange={(v) => {
                 const value = v === '__none__' ? '' : v;
                 setFormData({ ...formData, collaboration_department: value });
@@ -370,7 +370,7 @@ export default function Activities() {
         <div className="space-y-2">
           <Label>Status</Label>
           <Select 
-            value={formData.status} 
+            value={formData.status ?? 'upcoming'} 
             onValueChange={(v) => setFormData({ ...formData, status: v })}
           >
             <SelectTrigger>
