@@ -508,6 +508,74 @@ export type Database = {
           },
         ]
       }
+      examination_materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string
+          id: string
+          material_type: string
+          stage_id: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url: string
+          id?: string
+          material_type: string
+          stage_id: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string
+          id?: string
+          material_type?: string
+          stage_id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "examination_materials_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "examination_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      examination_stages: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       leave_requests: {
         Row: {
           admin_comment: string | null
@@ -582,6 +650,53 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      member_examinations: {
+        Row: {
+          applied_at: string
+          completed_at: string | null
+          created_at: string
+          exam_year: number
+          id: string
+          stage_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          completed_at?: string | null
+          created_at?: string
+          exam_year?: number
+          id?: string
+          stage_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          completed_at?: string | null
+          created_at?: string
+          exam_year?: number
+          id?: string
+          stage_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_examinations_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "examination_stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {

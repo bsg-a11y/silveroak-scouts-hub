@@ -38,6 +38,7 @@ const mainNavItems = [
   { icon: Users, label: 'Members', path: '/members', adminOnly: true },
   { icon: UsersRound, label: 'Our Team', path: '/our-team' },
   { icon: Calendar, label: 'Activities', path: '/activities' },
+  { icon: Award, label: 'Examinations', path: '/examinations' },
   { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: Megaphone, label: 'Announcements', path: '/announcements' },
   { icon: CalendarDays, label: 'Meetings', path: '/meetings' },
