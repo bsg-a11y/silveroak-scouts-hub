@@ -101,6 +101,44 @@ export type Database = {
           },
         ]
       }
+      activity_photos: {
+        Row: {
+          activity_id: string
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          photo_url: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          activity_id: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          photo_url: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          activity_id?: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          photo_url?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_photos_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_registrations: {
         Row: {
           activity_id: string
@@ -123,6 +161,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "activity_registrations_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_reports: {
+        Row: {
+          activity_id: string
+          created_at: string
+          file_type: string | null
+          file_url: string
+          id: string
+          report_type: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          report_type?: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          report_type?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_reports_activity_id_fkey"
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activities"
@@ -436,6 +515,59 @@ export type Database = {
           short_code?: string
         }
         Relationships: []
+      }
+      committee_applications: {
+        Row: {
+          admin_comment: string | null
+          application_type: string
+          created_at: string
+          id: string
+          interested_department_id: string | null
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          skill_ratings: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          application_type: string
+          created_at?: string
+          id?: string
+          interested_department_id?: string | null
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          skill_ratings?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_comment?: string | null
+          application_type?: string
+          created_at?: string
+          id?: string
+          interested_department_id?: string | null
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          skill_ratings?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_applications_interested_department_id_fkey"
+            columns: ["interested_department_id"]
+            isOneToOne: false
+            referencedRelation: "committee_departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       committee_departments: {
         Row: {

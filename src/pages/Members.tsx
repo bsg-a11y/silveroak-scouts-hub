@@ -80,6 +80,7 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [memberTab, setMemberTab] = useState<'members' | 'faculty' | 'all'>('members');
+  const [examStageFilter, setExamStageFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -129,7 +130,7 @@ export default function Members() {
   const { colleges } = useColleges();
   const { isAdminOrCoordinator, isAdmin } = useAuth();
   const { toast } = useToast();
-  const { memberExaminations, getUserExaminationBadge } = useExaminations();
+  const { memberExaminations, getUserExaminationBadge, stages } = useExaminations();
 
   // Filter members by type: regular members vs faculty
   const regularMembers = members.filter(m => 
@@ -155,13 +156,29 @@ export default function Members() {
     }
   }, [memberTab, members, regularMembers, facultyMembers]);
 
-  const filteredMembers = tabMembers.filter(
-    (member) =>
+  const filteredMembers = tabMembers.filter((member) => {
+    // Text search filter
+    const matchesSearch = 
       member.uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (member.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      (member.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Exam stage filter
+    if (examStageFilter !== 'all') {
+      const memberExam = memberExaminations.find(e => e.user_id === member.user_id);
+      if (examStageFilter === 'none') {
+        return !memberExam;
+      }
+      if (!memberExam || memberExam.stage_id !== examStageFilter) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
 
   const getRoleBadgeVariant = (role: string) => {
     const variants: Record<string, 'admin' | 'coordinator' | 'executive' | 'core' | 'member'> = {
@@ -834,7 +851,7 @@ export default function Members() {
                   </TabsList>
                 </Tabs>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -844,6 +861,22 @@ export default function Members() {
                     className="pl-9 w-64"
                   />
                 </div>
+                {memberTab !== 'faculty' && (
+                  <Select value={examStageFilter} onValueChange={setExamStageFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter by exam stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Exam Stages</SelectItem>
+                      <SelectItem value="none">No Exam Record</SelectItem>
+                      {stages.map(stage => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </CardHeader>

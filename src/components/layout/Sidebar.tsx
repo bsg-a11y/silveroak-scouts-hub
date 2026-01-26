@@ -21,6 +21,8 @@ import {
   UsersRound,
   ListTodo,
   BoxIcon,
+  Image,
+  ClipboardCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +40,8 @@ const mainNavItems = [
   { icon: Users, label: 'Members', path: '/members', adminOnly: true },
   { icon: UsersRound, label: 'Our Team', path: '/our-team' },
   { icon: Calendar, label: 'Activities', path: '/activities' },
+  { icon: Image, label: 'Activity Photos', path: '/activity-photos' },
+  { icon: ClipboardCheck, label: 'Forms', path: '/forms' },
   { icon: Award, label: 'Examinations', path: '/examinations' },
   { icon: ListTodo, label: 'Tasks', path: '/tasks' },
   { icon: Megaphone, label: 'Announcements', path: '/announcements' },
@@ -47,6 +51,7 @@ const mainNavItems = [
   { icon: BoxIcon, label: 'Collection Drives', path: '/collection-drives', adminOnly: true },
   { icon: PackageSearch, label: 'Inventory', path: '/inventory', adminOnly: true },
   { icon: Award, label: 'Certificates', path: '/certificates' },
+  { icon: FileText, label: 'Reports', path: '/reports' },
   { icon: Lightbulb, label: 'Suggestions', path: '/suggestions' },
 ];
 
@@ -78,6 +83,8 @@ export function Sidebar({ collapsed, onToggle, isMobile }: SidebarProps) {
     filteredMainNavItems = [
       { icon: LayoutDashboard, label: 'Faculty Dashboard', path: '/faculty-dashboard' },
       { icon: UsersRound, label: 'Our Team', path: '/our-team' },
+      { icon: Image, label: 'Activity Photos', path: '/activity-photos' },
+      { icon: FileText, label: 'Reports', path: '/reports' },
     ];
   }
 

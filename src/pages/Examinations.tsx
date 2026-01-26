@@ -147,24 +147,25 @@ export default function Examinations() {
       const filePath = `examination-materials/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('examination-materials')
         .upload(filePath, selectedFile);
 
       if (uploadError) {
         throw uploadError;
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
+      // Get public URL - bucket is private so we'll just store the path
+      // and generate signed URLs when displaying
+      const { data: urlData } = await supabase.storage
+        .from('examination-materials')
+        .createSignedUrl(filePath, 31536000); // 1 year expiry
 
       // Save material record
       const success = await addMaterial({
         stage_id: materialForm.stage_id,
         title: materialForm.title,
         material_type: materialForm.material_type,
-        file_url: publicUrl,
+        file_url: urlData?.signedUrl || filePath,
         description: materialForm.description,
       });
 

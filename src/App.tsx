@@ -26,6 +26,9 @@ import FacultyDashboard from "./pages/FacultyDashboard";
 import Tasks from "./pages/Tasks";
 import CollectionDrives from "./pages/CollectionDrives";
 import Examinations from "./pages/Examinations";
+import Forms from "./pages/Forms";
+import ActivityPhotos from "./pages/ActivityPhotos";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +61,9 @@ const App = () => (
               <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
               <Route path="/collection-drives" element={<ProtectedRoute><CollectionDrives /></ProtectedRoute>} />
               <Route path="/examinations" element={<ProtectedRoute><Examinations /></ProtectedRoute>} />
+              <Route path="/forms" element={<ProtectedRoute><Forms /></ProtectedRoute>} />
+              <Route path="/activity-photos" element={<ProtectedRoute><ActivityPhotos /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/faculty-dashboard" element={<ProtectedRoute requiredRoles={['faculty_coordinator']}><FacultyDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
