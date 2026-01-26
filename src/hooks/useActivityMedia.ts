@@ -73,15 +73,19 @@ export function useActivityMedia() {
     setIsLoading(false);
   };
 
-  // Photos CRUD
+  // Photos CRUD - supports multiple files
   const uploadPhoto = async (activityId: string, file: File, caption?: string) => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${activityId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
+      // Upload with original format and size (no transformation)
       const { error: uploadError } = await supabase.storage
         .from('activity-photos')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 
@@ -100,17 +104,39 @@ export function useActivityMedia() {
 
       if (insertError) throw insertError;
 
-      toast({ title: 'Photo uploaded successfully' });
-      await fetchPhotos();
       return { success: true };
     } catch (error: any) {
+      console.error('Upload error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Upload multiple photos at once
+  const uploadMultiplePhotos = async (activityId: string, files: File[], caption?: string) => {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const file of files) {
+      const result = await uploadPhoto(activityId, file, caption);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast({ title: `${successCount} photo${successCount > 1 ? 's' : ''} uploaded successfully` });
+      await fetchPhotos();
+    }
+    if (failCount > 0) {
       toast({
-        title: 'Error uploading photo',
-        description: error.message,
+        title: `${failCount} photo${failCount > 1 ? 's' : ''} failed to upload`,
         variant: 'destructive',
       });
-      return { success: false };
     }
+
+    return { success: successCount > 0, successCount, failCount };
   };
 
   const deletePhoto = async (id: string, photoUrl: string) => {
@@ -142,7 +168,7 @@ export function useActivityMedia() {
     }
   };
 
-  // Reports CRUD
+  // Reports CRUD - supports single file upload
   const uploadReport = async (
     activityId: string, 
     file: File, 
@@ -159,7 +185,6 @@ export function useActivityMedia() {
 
       if (uploadError) throw uploadError;
 
-      // For private bucket, we'll store the path and generate signed URLs on demand
       const filePath = fileName;
 
       const { error: insertError } = await supabase
@@ -175,17 +200,46 @@ export function useActivityMedia() {
 
       if (insertError) throw insertError;
 
-      toast({ title: 'Report uploaded successfully' });
-      await fetchReports();
       return { success: true };
     } catch (error: any) {
+      console.error('Report upload error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Upload multiple reports at once
+  const uploadMultipleReports = async (
+    activityId: string,
+    files: File[],
+    titlePrefix: string,
+    reportType: 'report' | 'summary' | 'documentation' = 'report'
+  ) => {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const title = files.length > 1 ? `${titlePrefix} (${i + 1})` : titlePrefix;
+      const result = await uploadReport(activityId, file, title, reportType);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast({ title: `${successCount} report${successCount > 1 ? 's' : ''} uploaded successfully` });
+      await fetchReports();
+    }
+    if (failCount > 0) {
       toast({
-        title: 'Error uploading report',
-        description: error.message,
+        title: `${failCount} report${failCount > 1 ? 's' : ''} failed to upload`,
         variant: 'destructive',
       });
-      return { success: false };
     }
+
+    return { success: successCount > 0, successCount, failCount };
   };
 
   const getReportSignedUrl = async (filePath: string): Promise<string | null> => {
@@ -240,16 +294,24 @@ export function useActivityMedia() {
     fetchAll();
   }, []);
 
+  // Get public URL for photo download
+  const getPhotoDownloadUrl = (photoUrl: string): string => {
+    return photoUrl; // Photos bucket is public, direct URL works
+  };
+
   return {
     photos,
     reports,
     isLoading,
     fetchAll,
     uploadPhoto,
+    uploadMultiplePhotos,
     deletePhoto,
     uploadReport,
+    uploadMultipleReports,
     deleteReport,
     getReportSignedUrl,
+    getPhotoDownloadUrl,
     getPhotosForActivity,
     getReportsForActivity,
   };
