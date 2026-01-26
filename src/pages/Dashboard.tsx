@@ -14,12 +14,14 @@ import {
   Loader2,
   Check,
   X,
+  GraduationCap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useActivities } from '@/hooks/useActivities';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
+import { useExaminationStats } from '@/hooks/useExaminations';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import bsgLogo from '@/assets/bsg-logo.png';
@@ -30,6 +32,7 @@ export default function Dashboard() {
   const { activities, isLoading: activitiesLoading } = useActivities();
   const { announcements, isLoading: announcementsLoading } = useAnnouncements();
   const { leaveRequests, updateLeaveStatus, isLoading: leavesLoading } = useLeaveRequests();
+  const { stats: examStats, isLoading: examStatsLoading } = useExaminationStats();
   const { profile, isAdminOrCoordinator } = useAuth();
 
   const upcomingActivities = activities.filter(a => a.status === 'upcoming').slice(0, 3);
@@ -343,6 +346,76 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Examination Summary (Admin/Coordinator only) */}
+        {isAdminOrCoordinator && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="text-lg">Examination Summary</CardTitle>
+                <CardDescription>BSG examination progress overview</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/examinations')}>
+                View Details <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {examStatsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                      </div>
+                      <p className="text-2xl font-bold font-display text-foreground">
+                        {examStats.totalApplied}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Total Applied</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                      <p className="text-2xl font-bold font-display text-bsg-green">
+                        {examStats.totalCompleted}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Completed</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                      <p className="text-2xl font-bold font-display text-amber-500">
+                        {examStats.totalApplied - examStats.totalCompleted}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Ongoing</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                      <p className="text-2xl font-bold font-display text-foreground">
+                        {examStats.totalApplied > 0 
+                          ? Math.round((examStats.totalCompleted / examStats.totalApplied) * 100) 
+                          : 0}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">Completion Rate</p>
+                    </div>
+                  </div>
+                  
+                  {/* Stage-wise breakdown */}
+                  {examStats.byStage.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">By Stage</p>
+                      <div className="flex flex-wrap gap-2">
+                        {examStats.byStage.map((stage) => (
+                          <Badge key={stage.name} variant="outline" className="py-1.5">
+                            {stage.name}: {stage.complete} ✓ / {stage.ongoing} ⋯
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </DashboardLayout>

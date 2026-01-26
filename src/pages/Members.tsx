@@ -63,6 +63,8 @@ import { useToast } from '@/hooks/use-toast';
 import { MemberDetailsDialog } from '@/components/MemberDetailsDialog';
 import { EditMemberDialog } from '@/components/EditMemberDialog';
 import { FullProfileDialog } from '@/components/FullProfileDialog';
+import { ExaminationBadge } from '@/components/ExaminationBadge';
+import { useExaminations } from '@/hooks/useExaminations';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -127,6 +129,7 @@ export default function Members() {
   const { colleges } = useColleges();
   const { isAdminOrCoordinator, isAdmin } = useAuth();
   const { toast } = useToast();
+  const { memberExaminations, getUserExaminationBadge } = useExaminations();
 
   // Filter members by type: regular members vs faculty
   const regularMembers = members.filter(m => 
@@ -925,9 +928,21 @@ export default function Members() {
                           }
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getRoleBadgeVariant(member.role || 'member')}>
-                            {ROLE_LABELS[member.role || 'member']}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant={getRoleBadgeVariant(member.role || 'member')}>
+                              {ROLE_LABELS[member.role || 'member']}
+                            </Badge>
+                            {(() => {
+                              const examBadge = getUserExaminationBadge(member.user_id);
+                              return examBadge ? (
+                                <ExaminationBadge 
+                                  stageName={examBadge.stageName} 
+                                  status={examBadge.status} 
+                                  size="sm" 
+                                />
+                              ) : null;
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {member.status === 'active' ? (

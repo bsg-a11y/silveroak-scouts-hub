@@ -27,10 +27,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Calendar, Users, Loader2, CalendarCheck, CalendarX, UserCheck, Download, Filter, FileText, FileSpreadsheet, X, Building2 } from 'lucide-react';
+import { Search, Calendar, Users, Loader2, CalendarCheck, CalendarX, UserCheck, Download, Filter, FileText, FileSpreadsheet, X, Building2, GraduationCap, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColleges } from '@/hooks/useColleges';
+import { useExaminationStats } from '@/hooks/useExaminations';
 import { format } from 'date-fns';
 import { COLLEGE_DEPARTMENTS, getDepartmentsForCollege } from '@/lib/collegeDepartments';
 
@@ -78,6 +79,7 @@ interface AttendanceRecord {
 export default function FacultyDashboard() {
   const { profile } = useAuth();
   const { colleges } = useColleges();
+  const { stats: examStats, isLoading: examStatsLoading, fetchStats: fetchExamStats } = useExaminationStats();
   const [activities, setActivities] = useState<ActivityWithRegistrations[]>([]);
   const [meetings, setMeetings] = useState<MeetingWithAttendance[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -492,7 +494,7 @@ export default function FacultyDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card variant="stat">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -541,6 +543,23 @@ export default function FacultyDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Overall Attendance</p>
                   <p className="text-2xl font-bold font-display">{stats.overallPercentage}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card variant="stat">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <GraduationCap className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Exam Completion</p>
+                  <p className="text-2xl font-bold font-display">
+                    {examStats.totalApplied > 0 
+                      ? Math.round((examStats.totalCompleted / examStats.totalApplied) * 100) 
+                      : 0}%
+                  </p>
                 </div>
               </div>
             </CardContent>
