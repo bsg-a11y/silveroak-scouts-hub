@@ -640,6 +640,42 @@ export type Database = {
           },
         ]
       }
+      custom_forms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fields: Json
+          form_type: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       examination_materials: {
         Row: {
           created_at: string
@@ -707,6 +743,50 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      form_submissions: {
+        Row: {
+          admin_comment: string | null
+          created_at: string
+          form_id: string
+          id: string
+          responses: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          created_at?: string
+          form_id: string
+          id?: string
+          responses?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_comment?: string | null
+          created_at?: string
+          form_id?: string
+          id?: string
+          responses?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leave_requests: {
         Row: {

@@ -35,9 +35,9 @@ import {
   Loader2,
   Search,
   Download,
-  Eye,
   Calendar,
   File,
+  X,
 } from 'lucide-react';
 import { useActivityMedia } from '@/hooks/useActivityMedia';
 import { useActivities } from '@/hooks/useActivities';
@@ -51,15 +51,15 @@ const REPORT_TYPES = [
 ];
 
 export default function Reports() {
-  const { isAdminOrCoordinator, isFacultyCoordinator } = useAuth();
-  const { reports, isLoading, uploadReport, deleteReport, getReportSignedUrl } = useActivityMedia();
+  const { isAdminOrCoordinator } = useAuth();
+  const { reports, isLoading, uploadMultipleReports, deleteReport, getReportSignedUrl } = useActivityMedia();
   const { activities } = useActivities();
 
   const [selectedActivity, setSelectedActivity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadForm, setUploadForm] = useState({
     activity_id: '',
     title: '',
@@ -90,13 +90,24 @@ export default function Reports() {
     return activity?.activity_date ? format(new Date(activity.activity_date), 'MMM d, yyyy') : '';
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(Array.from(files));
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleUpload = async () => {
-    if (!selectedFile || !uploadForm.activity_id || !uploadForm.title) return;
+    if (selectedFiles.length === 0 || !uploadForm.activity_id || !uploadForm.title) return;
 
     setIsUploading(true);
-    const result = await uploadReport(
+    const result = await uploadMultipleReports(
       uploadForm.activity_id,
-      selectedFile,
+      selectedFiles,
       uploadForm.title,
       uploadForm.report_type
     );
@@ -104,7 +115,7 @@ export default function Reports() {
 
     if (result.success) {
       setIsUploadDialogOpen(false);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setUploadForm({ activity_id: '', title: '', report_type: 'report' });
     }
   };
@@ -150,7 +161,7 @@ export default function Reports() {
           {isAdminOrCoordinator && (
             <Button onClick={() => setIsUploadDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
-              Upload Report
+              Upload Reports
             </Button>
           )}
         </div>
@@ -275,13 +286,13 @@ export default function Reports() {
           </CardContent>
         </Card>
 
-        {/* Upload Dialog */}
+        {/* Upload Dialog - Multiple Files */}
         <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Upload Report</DialogTitle>
+              <DialogTitle>Upload Reports</DialogTitle>
               <DialogDescription>
-                Upload a report document for an activity
+                Upload multiple report documents for an activity
               </DialogDescription>
             </DialogHeader>
 
@@ -312,6 +323,11 @@ export default function Reports() {
                   onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="e.g., Blood Donation Camp Report"
                 />
+                {selectedFiles.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Title will be numbered for multiple files
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -334,16 +350,40 @@ export default function Reports() {
               </div>
 
               <div className="space-y-2">
-                <Label>File *</Label>
+                <Label>Files * (Select multiple)</Label>
                 <Input
                   type="file"
                   accept=".pdf,.doc,.docx"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={handleFileChange}
                 />
                 <p className="text-xs text-muted-foreground">
                   Accepted formats: PDF, DOC, DOCX
                 </p>
               </div>
+
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Selected Files ({selectedFiles.length})</Label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          {getFileIcon(file.name.split('.').pop() || null)}
+                          <span className="text-sm truncate">{file.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => removeFile(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -352,10 +392,10 @@ export default function Reports() {
               </Button>
               <Button 
                 onClick={handleUpload} 
-                disabled={isUploading || !selectedFile || !uploadForm.activity_id || !uploadForm.title}
+                disabled={isUploading || selectedFiles.length === 0 || !uploadForm.activity_id || !uploadForm.title}
               >
                 {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                Upload
+                Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
               </Button>
             </DialogFooter>
           </DialogContent>
