@@ -22,6 +22,8 @@ import {
 import { ROLE_LABELS, type UserRole } from '@/types';
 import { format } from 'date-fns';
 import bsgLogo from '@/assets/bsg-logo.png';
+import { ExaminationBadge } from '@/components/ExaminationBadge';
+import { useExaminations } from '@/hooks/useExaminations';
 
 interface FullProfile {
   id: string;
@@ -75,6 +77,7 @@ export default function Profile() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { getUserExaminationBadge } = useExaminations();
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -203,6 +206,15 @@ export default function Profile() {
                       <Badge variant={userRole === 'admin' ? 'admin' : userRole === 'coordinator' ? 'coordinator' : userRole === 'executive' ? 'executive' : userRole === 'core' ? 'core' : userRole === 'faculty_coordinator' ? 'coordinator' : 'member'}>
                         {ROLE_LABELS[userRole]}
                       </Badge>
+                      {(() => {
+                        const examBadge = user ? getUserExaminationBadge(user.id) : null;
+                        return examBadge ? (
+                          <ExaminationBadge 
+                            stageName={examBadge.stageName} 
+                            status={examBadge.status} 
+                          />
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                   <Button>
