@@ -34,7 +34,10 @@ import {
   Download,
   CheckSquare,
   Square,
+  Edit,
+  GripVertical,
 } from 'lucide-react';
+import { DragDropUpload } from '@/components/DragDropUpload';
 import { useActivityMedia } from '@/hooks/useActivityMedia';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
@@ -449,42 +452,20 @@ export default function ActivityPhotos() {
               </div>
 
               <div className="space-y-2">
-                <Label>Photos * (Select multiple)</Label>
-                <Input
-                  type="file"
+                <Label>Photos * (Drag & drop or click to select)</Label>
+                <DragDropUpload
                   accept="image/*"
                   multiple
-                  onChange={handleFileChange}
+                  maxFiles={20}
+                  files={selectedFiles}
+                  onFilesChange={setSelectedFiles}
+                  previews={previews}
+                  onPreviewsChange={setPreviews}
                 />
                 <p className="text-xs text-muted-foreground">
                   Photos will be uploaded in their original format and size
                 </p>
               </div>
-
-              {previews.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Selected Photos ({previews.length})</Label>
-                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                    {previews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-5 w-5"
-                          onClick={() => removeFile(index)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label>Caption (optional - applies to all)</Label>

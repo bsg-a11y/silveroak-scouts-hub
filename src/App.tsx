@@ -29,6 +29,8 @@ import Examinations from "./pages/Examinations";
 import Forms from "./pages/Forms";
 import ActivityPhotos from "./pages/ActivityPhotos";
 import Reports from "./pages/Reports";
+import StudentReports from "./pages/StudentReports";
+import ConsentForms from "./pages/ConsentForms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +66,8 @@ const App = () => (
               <Route path="/forms" element={<ProtectedRoute><Forms /></ProtectedRoute>} />
               <Route path="/activity-photos" element={<ProtectedRoute><ActivityPhotos /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/student-reports" element={<ProtectedRoute><StudentReports /></ProtectedRoute>} />
+              <Route path="/consent-forms" element={<ProtectedRoute><ConsentForms /></ProtectedRoute>} />
               <Route path="/faculty-dashboard" element={<ProtectedRoute requiredRoles={['faculty_coordinator']}><FacultyDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

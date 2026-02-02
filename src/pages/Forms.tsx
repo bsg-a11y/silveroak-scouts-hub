@@ -85,6 +85,7 @@ export default function Forms() {
 
   // Custom Form state
   const [isCreateFormDialogOpen, setIsCreateFormDialogOpen] = useState(false);
+  const [isEditFormDialogOpen, setIsEditFormDialogOpen] = useState(false);
   const [isFillFormDialogOpen, setIsFillFormDialogOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState<typeof forms[0] | null>(null);
   const [formResponses, setFormResponses] = useState<Record<string, any>>({});
@@ -94,13 +95,27 @@ export default function Forms() {
     form_type: 'general',
     fields: [] as FormField[],
   });
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    form_type: 'general',
+    fields: [] as FormField[],
+    is_active: true,
+  });
   const [newField, setNewField] = useState<Partial<FormField>>({
     label: '',
     type: 'text',
     required: false,
     options: [],
   });
+  const [editField, setEditField] = useState<Partial<FormField>>({
+    label: '',
+    type: 'text',
+    required: false,
+    options: [],
+  });
   const [optionInput, setOptionInput] = useState('');
+  const [editOptionInput, setEditOptionInput] = useState('');
 
   // Committee application form state
   const [formData, setFormData] = useState<CreateApplicationData>({
@@ -179,6 +194,54 @@ export default function Forms() {
     if (result.success) {
       setIsCreateFormDialogOpen(false);
       setNewFormData({ title: '', description: '', form_type: 'general', fields: [] });
+    }
+  };
+
+  // Edit form handlers
+  const openEditFormDialog = (form: typeof forms[0]) => {
+    setSelectedForm(form);
+    setEditFormData({
+      title: form.title,
+      description: form.description || '',
+      form_type: form.form_type,
+      fields: [...form.fields],
+      is_active: form.is_active,
+    });
+    setIsEditFormDialogOpen(true);
+  };
+
+  const addEditField = () => {
+    if (!editField.label?.trim()) return;
+    const field: FormField = {
+      id: `field_${Date.now()}`,
+      label: editField.label.trim(),
+      type: editField.type as FormField['type'],
+      required: editField.required || false,
+      options: editField.type === 'select' ? editField.options : undefined,
+      placeholder: editField.placeholder,
+    };
+    setEditFormData(prev => ({ ...prev, fields: [...prev.fields, field] }));
+    setEditField({ label: '', type: 'text', required: false, options: [] });
+  };
+
+  const removeEditField = (fieldId: string) => {
+    setEditFormData(prev => ({ ...prev, fields: prev.fields.filter(f => f.id !== fieldId) }));
+  };
+
+  const addEditOption = () => {
+    if (!editOptionInput.trim()) return;
+    setEditField(prev => ({ ...prev, options: [...(prev.options || []), editOptionInput.trim()] }));
+    setEditOptionInput('');
+  };
+
+  const handleUpdateForm = async () => {
+    if (!selectedForm || !editFormData.title.trim()) return;
+    setIsSubmitting(true);
+    const result = await updateForm(selectedForm.id, editFormData);
+    setIsSubmitting(false);
+    if (result.success) {
+      setIsEditFormDialogOpen(false);
+      setSelectedForm(null);
     }
   };
 
@@ -435,7 +498,16 @@ export default function Forms() {
                                 <Button
                                   variant="ghost"
                                   size="icon-sm"
+                                  onClick={() => openEditFormDialog(form)}
+                                  title="Edit form"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
                                   onClick={() => updateForm(form.id, { is_active: !form.is_active })}
+                                  title={form.is_active ? 'Deactivate' : 'Activate'}
                                 >
                                   {form.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                                 </Button>
@@ -444,6 +516,7 @@ export default function Forms() {
                                   size="icon-sm"
                                   className="text-destructive"
                                   onClick={() => deleteForm(form.id)}
+                                  title="Delete form"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -743,6 +816,107 @@ export default function Forms() {
               <Button variant="outline" onClick={() => setIsCreateFormDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleCreateForm} disabled={isSubmitting || !newFormData.title.trim() || newFormData.fields.length === 0}>
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}Create Form
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Form Dialog */}
+        <Dialog open={isEditFormDialogOpen} onOpenChange={setIsEditFormDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Form</DialogTitle>
+              <DialogDescription>Update form details and fields</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Form Title *</Label>
+                  <Input value={editFormData.title} onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Form Type</Label>
+                  <Select value={editFormData.form_type} onValueChange={(v) => setEditFormData(prev => ({ ...prev, form_type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="feedback">Feedback</SelectItem>
+                      <SelectItem value="registration">Registration</SelectItem>
+                      <SelectItem value="survey">Survey</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea value={editFormData.description} onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))} rows={2} />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox checked={editFormData.is_active} onCheckedChange={(c) => setEditFormData(prev => ({ ...prev, is_active: c === true }))} />
+                <Label>Active (visible to members)</Label>
+              </div>
+
+              {/* Existing Fields */}
+              <div className="space-y-2">
+                <Label>Current Fields ({editFormData.fields.length})</Label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {editFormData.fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center justify-between p-2 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{field.type}</Badge>
+                        <span className="text-sm">{field.label}</span>
+                        {field.required && <span className="text-xs text-destructive">*</span>}
+                      </div>
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeEditField(field.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add New Field */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <Label className="text-sm font-medium">Add New Field</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Field label" value={editField.label || ''} onChange={(e) => setEditField(prev => ({ ...prev, label: e.target.value }))} />
+                  <Select value={editField.type} onValueChange={(v) => setEditField(prev => ({ ...prev, type: v as any }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FIELD_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {editField.type === 'select' && (
+                  <div className="flex gap-2">
+                    <Input placeholder="Add option" value={editOptionInput} onChange={(e) => setEditOptionInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEditOption())} />
+                    <Button type="button" variant="outline" size="sm" onClick={addEditOption}>Add</Button>
+                  </div>
+                )}
+                {editField.type === 'select' && editField.options && editField.options.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {editField.options.map((opt, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">{opt}</Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={editField.required} onCheckedChange={(c) => setEditField(prev => ({ ...prev, required: c === true }))} />
+                    <Label className="text-sm">Required</Label>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addEditField} disabled={!editField.label?.trim()}>
+                    <Plus className="h-3 w-3 mr-1" /> Add Field
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditFormDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleUpdateForm} disabled={isSubmitting || !editFormData.title.trim()}>
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
               </Button>
             </DialogFooter>
           </DialogContent>
