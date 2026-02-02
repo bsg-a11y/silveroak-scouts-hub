@@ -23,6 +23,8 @@ import {
   BoxIcon,
   Image,
   ClipboardCheck,
+  FileCheck,
+  ScrollText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +54,8 @@ const mainNavItems = [
   { icon: PackageSearch, label: 'Inventory', path: '/inventory', adminOnly: true },
   { icon: Award, label: 'Certificates', path: '/certificates' },
   { icon: FileText, label: 'Reports', path: '/reports' },
+  { icon: FileCheck, label: 'Student Reports', path: '/student-reports' },
+  { icon: ScrollText, label: 'Consent Forms', path: '/consent-forms' },
   { icon: Lightbulb, label: 'Suggestions', path: '/suggestions' },
 ];
 

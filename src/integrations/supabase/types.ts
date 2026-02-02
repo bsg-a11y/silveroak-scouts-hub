@@ -640,6 +640,45 @@ export type Database = {
           },
         ]
       }
+      consent_forms: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_type: string | null
+          file_url: string
+          form_type: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_type?: string | null
+          file_url: string
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_type?: string | null
+          file_url?: string
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       custom_forms: {
         Row: {
           created_at: string
@@ -1108,6 +1147,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_reports: {
+        Row: {
+          activity_id: string
+          admin_comment: string | null
+          created_at: string
+          file_type: string | null
+          file_url: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          admin_comment?: string | null
+          created_at?: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          admin_comment?: string | null
+          created_at?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_reports_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_comments: {
         Row: {
