@@ -55,6 +55,7 @@ import {
   Key,
   GraduationCap,
   Users,
+  Upload,
 } from 'lucide-react';
 import { useMembers, CreateMemberData, Member } from '@/hooks/useMembers';
 import { useColleges } from '@/hooks/useColleges';
@@ -65,6 +66,7 @@ import { EditMemberDialog } from '@/components/EditMemberDialog';
 import { FullProfileDialog } from '@/components/FullProfileDialog';
 import { ExaminationBadge } from '@/components/ExaminationBadge';
 import { useExaminations } from '@/hooks/useExaminations';
+import { BulkMemberImport } from '@/components/BulkMemberImport';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -83,6 +85,7 @@ export default function Members() {
   const [examStageFilter, setExamStageFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ uid: string; password: string; college?: string } | null>(null);
   const [resetPasswordMember, setResetPasswordMember] = useState<{ id: string; userId: string; name: string } | null>(null);
@@ -356,11 +359,17 @@ export default function Members() {
               Manage and organize BSG members
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
+            {isAdminOrCoordinator && (
+              <Button variant="outline" size="sm" onClick={() => setIsBulkImportOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Bulk Import
+              </Button>
+            )}
             {isAdmin && (
               <Dialog open={isFacultyDialogOpen} onOpenChange={(open) => {
                 setIsFacultyDialogOpen(open);
@@ -1125,6 +1134,13 @@ export default function Members() {
           open={!!editMember}
           onOpenChange={(open) => !open && setEditMember(null)}
           onSave={updateMember}
+        />
+
+        {/* Bulk Import Dialog */}
+        <BulkMemberImport
+          open={isBulkImportOpen}
+          onOpenChange={setIsBulkImportOpen}
+          onComplete={fetchMembers}
         />
       </div>
     </DashboardLayout>
