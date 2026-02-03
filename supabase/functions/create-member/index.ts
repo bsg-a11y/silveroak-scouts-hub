@@ -115,25 +115,19 @@ Deno.serve(async (req) => {
         );
       }
       
-      // Check if corresponding email exists in auth.users using targeted lookup
+      // Check if corresponding email exists in auth.users using createUser with duplicate check
       const emailToCheck = `${customUid.toLowerCase()}@bsg.local`;
       console.log(`Checking if email exists: ${emailToCheck}`);
       
-      // Use listUsers with filter instead of fetching all users
-      const { data: authUsers, error: authLookupError } = await adminClient.auth.admin
-        .listUsers({ page: 1, perPage: 1 });
-      
-      // Check specifically for this email by querying with the filter
-      const { data: existingCheck } = await adminClient
+      // Check profiles table first for existing UID (more reliable)
+      const { data: existingProfileByUid } = await adminClient
         .from("profiles")
-        .select("id, uid")
-        .or(`uid.eq.${customUid}`);
+        .select("id")
+        .eq("uid", customUid)
+        .maybeSingle();
       
-      // Also check auth.users by trying to find user with this email pattern
-      const matchingAuthUser = authUsers?.users?.find(u => u.email === emailToCheck);
-      
-      if (matchingAuthUser) {
-        console.log(`Email already exists for UID: ${customUid}`);
+      if (existingProfileByUid) {
+        console.log(`UID already exists in profiles: ${customUid}`);
         return new Response(
           JSON.stringify({ error: "This UID is already registered in the system" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
