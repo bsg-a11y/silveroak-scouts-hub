@@ -31,6 +31,8 @@ import {
   Search,
   Edit,
   Plus,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { DragDropUpload } from '@/components/DragDropUpload';
 import { useConsentForms, CONSENT_FORM_TYPES } from '@/hooks/useConsentForms';
@@ -261,13 +263,23 @@ export default function ConsentForms() {
                                   variant="ghost"
                                   size="icon-sm"
                                   onClick={() => openEditDialog(form)}
+                                  title="Edit form"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon-sm"
+                                  onClick={() => updateForm(form.id, { is_active: !form.is_active })}
+                                  title={form.is_active ? 'Deactivate' : 'Activate'}
+                                >
+                                  {form.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
                                   onClick={() => deleteForm(form.id, form.file_url)}
+                                  title="Delete form"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
