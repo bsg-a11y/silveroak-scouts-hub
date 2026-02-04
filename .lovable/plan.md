@@ -1,82 +1,114 @@
 
-# Plan: Fix Create Member Function and Improve Reliability
+# Plan: Add Custom Password Support for Password Reset
 
-## Problem Summary
-The "2x function" error is not a load capacity issue. The portal can handle significantly more members than the current 16. The error is coming from:
-1. A potentially slow operation in the edge function (`listUsers()` fetching all users)
-2. Validation errors returning as 400 status codes
+## Overview
+Enable admins to set custom passwords when resetting member passwords, in addition to the existing auto-generate option. The backend edge function already supports this - we just need to update the UI.
 
-## Solution
+## Current State Analysis
 
-### Phase 1: Optimize the Create Member Edge Function
+### Backend (Already Working)
+The `reset-password` edge function at `supabase/functions/reset-password/index.ts` already accepts an optional `new_password` parameter:
+- If `new_password` is provided, it uses that password
+- If not provided, it auto-generates a secure 16-character password
 
-**File:** `supabase/functions/create-member/index.ts`
+### Frontend (Needs Update)
+The Reset Password dialog in `src/pages/Members.tsx` (lines 1060-1122) currently:
+- Only shows a confirmation message
+- Automatically generates a random password
+- Does not allow admin to enter a custom password
+
+---
+
+## Implementation Plan
+
+### Phase 1: Update Reset Password Dialog UI
+
+**File:** `src/pages/Members.tsx`
 
 **Changes:**
-1. Replace the inefficient `listUsers()` call with a targeted query:
-   - Current code fetches ALL users to check if an email exists
-   - New code will use `getUserByEmail()` or a direct query for the specific email only
+1. Add a new state variable `customPassword` to store admin-entered password
+2. Add a toggle to switch between "Auto-generate" and "Custom password" modes
+3. Add a password input field that appears when custom mode is selected
+4. Add password visibility toggle for the custom password field
+5. Add password validation (minimum 6 characters)
 
-2. Add better error logging to help debug future issues
-
-3. Add a timeout wrapper for database operations
-
+**New UI Layout:**
 ```text
-Current (slow):
-const { data: authUsers } = await adminClient.auth.admin.listUsers();
-const existingAuthUser = authUsers?.users?.find(u => u.email === emailToCheck);
-
-Optimized:
-const { data: existingUser } = await adminClient
-  .from('auth.users')
-  .select('id')
-  .eq('email', emailToCheck)
-  .maybeSingle();
++------------------------------------------+
+|  Reset Password                          |
+|  ----------------------------------------|
+|  Member: John Doe                        |
+|                                          |
+|  Password Type:                          |
+|  [Auto-generate] [Custom Password]       |
+|                                          |
+|  (If Custom selected):                   |
+|  New Password: [______________] [Eye]    |
+|  Min. 6 characters                       |
+|                                          |
+|  [Cancel]            [Reset Password]    |
++------------------------------------------+
 ```
 
-### Phase 2: Add User-Friendly Error Messages
+### Phase 2: Update Password Reset Handler
 
-**File:** `src/hooks/useMembers.ts`
+**File:** `src/pages/Members.tsx`
 
-**Changes:**
-- Improve error message display to show exactly what went wrong
-- Add retry logic for transient failures
-- Show specific validation errors to the user
+**Changes to `handleResetPassword` function:**
+1. Check if custom password mode is selected
+2. Validate custom password length (minimum 6 characters)
+3. Pass `new_password` to edge function when custom password is provided
+4. Show appropriate success message based on mode used
 
-### Phase 3: Add Request Timeout Handling
-
-**File:** `supabase/functions/create-member/index.ts`
-
-**Changes:**
-- Wrap long-running operations with timeout protection
-- Add comprehensive logging for each step
-- Return descriptive errors for each failure point
+**Updated API call:**
+```typescript
+const response = await supabase.functions.invoke('reset-password', {
+  body: { 
+    user_id: resetPasswordMember.userId,
+    new_password: useCustomPassword ? customPassword : undefined
+  },
+});
+```
 
 ---
 
 ## Technical Details
 
-### Edge Function Limits
-- **CPU Time Limit**: 2 seconds (cumulative processing time)
-- **Wall Clock Limit**: 150 seconds (total request time)
-- **Memory**: 256MB default
+### State Variables to Add
+```typescript
+const [useCustomPassword, setUseCustomPassword] = useState(false);
+const [customPassword, setCustomPassword] = useState('');
+const [showCustomPassword, setShowCustomPassword] = useState(false);
+```
 
-The current 1.2-1.7 second execution times are fine, but the `listUsers()` call will become slower as users grow.
+### Validation Rules
+- Custom password minimum length: 6 characters (matching existing member creation validation)
+- Disable "Reset Password" button if custom mode is selected but password is too short
 
-### Estimated Capacity
-With the optimizations:
-- The portal can easily handle **hundreds to thousands of members**
-- Concurrent member creation: ~10-20 simultaneous requests
-- Database capacity is not a limiting factor
+### Reset State on Dialog Close
+When the dialog closes, reset all password-related states:
+- `customPassword` → ''
+- `useCustomPassword` → false
+- `showCustomPassword` → false
 
-### Files to Modify
-1. `supabase/functions/create-member/index.ts` - Optimize user lookup
-2. `src/hooks/useMembers.ts` - Better error handling
-3. `supabase/config.toml` - Add function configuration if needed
+---
 
-### Implementation Steps
-1. Update the edge function to use efficient user lookup
-2. Deploy and test member creation
-3. Add better error messages in the frontend
-4. Monitor logs for any remaining issues
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/Members.tsx` | Add custom password UI, state management, and update handler |
+
+## Security Considerations
+- Password is transmitted over HTTPS to the edge function
+- Edge function already validates admin role before allowing password reset
+- Custom password follows same security path as auto-generated password
+
+## Implementation Steps
+1. Add new state variables for custom password functionality
+2. Update the Reset Password dialog UI with toggle and input field
+3. Modify `handleResetPassword` to pass custom password when provided
+4. Add password visibility toggle using Eye/EyeOff icons
+5. Add validation feedback for password length
+6. Reset all states when dialog closes
 
