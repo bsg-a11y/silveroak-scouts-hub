@@ -48,6 +48,7 @@ import {
   Pencil,
   Trash2,
   Eye,
+  EyeOff,
   UserCheck,
   UserX,
   Loader2,
@@ -91,6 +92,9 @@ export default function Members() {
   const [resetPasswordMember, setResetPasswordMember] = useState<{ id: string; userId: string; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [useCustomPassword, setUseCustomPassword] = useState(false);
+  const [customPassword, setCustomPassword] = useState('');
+  const [showCustomPassword, setShowCustomPassword] = useState(false);
   const [viewDetailsMember, setViewDetailsMember] = useState<{ id: string; user_id: string; uid: string; first_name: string; last_name: string } | null>(null);
   const [editMember, setEditMember] = useState<Member | null>(null);
   const [formData, setFormData] = useState<CreateMemberData>({
@@ -317,10 +321,24 @@ export default function Members() {
 
   const handleResetPassword = async () => {
     if (!resetPasswordMember) return;
+    
+    // Validate custom password if in custom mode
+    if (useCustomPassword && customPassword.length < 6) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password must be at least 6 characters.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsResetting(true);
     try {
       const response = await supabase.functions.invoke('reset-password', {
-        body: { user_id: resetPasswordMember.userId },
+        body: { 
+          user_id: resetPasswordMember.userId,
+          new_password: useCustomPassword ? customPassword : undefined,
+        },
       });
       
       if (response.error) throw new Error(response.error.message);
@@ -1062,6 +1080,9 @@ export default function Members() {
           if (!open) {
             setResetPasswordMember(null);
             setNewPassword(null);
+            setUseCustomPassword(false);
+            setCustomPassword('');
+            setShowCustomPassword(false);
           }
         }}>
           <DialogContent>
@@ -1087,6 +1108,9 @@ export default function Members() {
                   <Button onClick={() => {
                     setResetPasswordMember(null);
                     setNewPassword(null);
+                    setUseCustomPassword(false);
+                    setCustomPassword('');
+                    setShowCustomPassword(false);
                   }}>
                     Done
                   </Button>
@@ -1097,15 +1121,72 @@ export default function Members() {
                 <DialogHeader>
                   <DialogTitle>Reset Password</DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to reset the password for {resetPasswordMember?.name}?
-                    A new random password will be generated.
+                    Reset password for {resetPasswordMember?.name}
                   </DialogDescription>
                 </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Password Type</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={!useCustomPassword ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setUseCustomPassword(false)}
+                      >
+                        Auto-generate
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={useCustomPassword ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setUseCustomPassword(true)}
+                      >
+                        Custom Password
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {useCustomPassword && (
+                    <div className="space-y-2">
+                      <Label htmlFor="customPassword">New Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="customPassword"
+                          type={showCustomPassword ? 'text' : 'password'}
+                          value={customPassword}
+                          onChange={(e) => setCustomPassword(e.target.value)}
+                          placeholder="Enter custom password"
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowCustomPassword(!showCustomPassword)}
+                        >
+                          {showCustomPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className={`text-xs ${customPassword.length > 0 && customPassword.length < 6 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        Minimum 6 characters {customPassword.length > 0 && `(${customPassword.length}/6)`}
+                      </p>
+                    </div>
+                  )}
+                </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setResetPasswordMember(null)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleResetPassword} disabled={isResetting}>
+                  <Button 
+                    onClick={handleResetPassword} 
+                    disabled={isResetting || (useCustomPassword && customPassword.length < 6)}
+                  >
                     {isResetting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
