@@ -281,6 +281,33 @@ export type Database = {
         }
         Relationships: []
       }
+      application_type_settings: {
+        Row: {
+          application_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          application_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          application_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           activity_id: string | null
