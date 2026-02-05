@@ -49,6 +49,7 @@ import {
 import { useCommitteeApplications, COMMITTEE_SKILLS, CreateApplicationData } from '@/hooks/useCommitteeApplications';
 import { useCustomForms, FormField } from '@/hooks/useCustomForms';
 import { useCommittee } from '@/hooks/useCommittee';
+ import { useApplicationTypeSettings } from '@/hooks/useApplicationTypeSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -74,6 +75,7 @@ export default function Forms() {
   const { applications, myApplications, isLoading: isLoadingApps, createApplication, reviewApplication, deleteApplication } = useCommitteeApplications();
   const { forms, submissions, mySubmissions, isLoading: isLoadingForms, createForm, updateForm, deleteForm, submitForm, reviewSubmission, deleteSubmission } = useCustomForms();
   const { departments } = useCommittee();
+   const { settings: appTypeSettings, isLoading: isLoadingSettings, toggleSetting, isTypeActive } = useApplicationTypeSettings();
 
   const [activeTab, setActiveTab] = useState('apply');
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
@@ -274,7 +276,8 @@ export default function Forms() {
 
   const currentSkills = COMMITTEE_SKILLS[formData.application_type] || [];
   const activeCustomForms = forms.filter(f => f.is_active);
-  const isLoading = isLoadingApps || isLoadingForms;
+   const activeApplicationTypes = APPLICATION_TYPES.filter(t => isTypeActive(t.value));
+   const isLoading = isLoadingApps || isLoadingForms || isLoadingSettings;
 
   return (
     <DashboardLayout>
@@ -333,8 +336,11 @@ export default function Forms() {
             {/* Committee Application Cards */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Committee Applications</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {APPLICATION_TYPES.map(type => (
+               {activeApplicationTypes.length === 0 ? (
+                 <p className="text-center text-muted-foreground py-8">No committee applications available at this time</p>
+               ) : (
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   {activeApplicationTypes.map(type => (
                   <Card key={type.value} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => {
                     setFormData(prev => ({ ...prev, application_type: type.value as any }));
                     setIsApplyDialogOpen(true);
@@ -349,8 +355,9 @@ export default function Forms() {
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                   ))}
+                 </div>
+               )}
             </div>
 
             {/* Custom Forms */}
@@ -455,6 +462,53 @@ export default function Forms() {
           {/* Admin: Manage Forms Tab */}
           {isAdminOrCoordinator && (
             <TabsContent value="manage-forms" className="space-y-4">
+               {/* Committee Application Types */}
+               <Card>
+                 <CardHeader>
+                   <CardTitle>Committee Application Forms</CardTitle>
+                   <CardDescription>Enable or disable committee application types</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <Table>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead>Application Type</TableHead>
+                         <TableHead>Description</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>Actions</TableHead>
+                       </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                       {APPLICATION_TYPES.map(type => {
+                         const isActive = isTypeActive(type.value);
+                         return (
+                           <TableRow key={type.value}>
+                             <TableCell className="font-medium">{type.label}</TableCell>
+                             <TableCell className="text-muted-foreground">{type.description}</TableCell>
+                             <TableCell>
+                               <Badge variant={isActive ? 'default' : 'secondary'}>
+                                 {isActive ? 'Active' : 'Inactive'}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <Button
+                                 variant="ghost"
+                                 size="icon-sm"
+                                 onClick={() => toggleSetting(type.value)}
+                                 title={isActive ? 'Deactivate' : 'Activate'}
+                               >
+                                 {isActive ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                               </Button>
+                             </TableCell>
+                           </TableRow>
+                         );
+                       })}
+                     </TableBody>
+                   </Table>
+                 </CardContent>
+               </Card>
+               
+               {/* Custom Forms */}
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
