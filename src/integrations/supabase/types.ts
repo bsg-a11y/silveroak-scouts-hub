@@ -854,6 +854,42 @@ export type Database = {
           },
         ]
       }
+      google_sheets_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_enabled: boolean
+          last_synced_at: string | null
+          sheet_id: string | null
+          sheet_name: string
+          sheet_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_synced_at?: string | null
+          sheet_id?: string | null
+          sheet_name?: string
+          sheet_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_synced_at?: string | null
+          sheet_id?: string | null
+          sheet_name?: string
+          sheet_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leave_requests: {
         Row: {
           admin_comment: string | null
