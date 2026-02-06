@@ -184,6 +184,12 @@ export function useMembers() {
       });
 
       await fetchMembers();
+      
+      // Auto-sync to Google Sheets if enabled (fire and forget)
+      supabase.functions.invoke('google-sheets-sync', {
+        body: { action: 'sync' }
+      }).catch(err => console.log('Auto-sync skipped:', err.message));
+      
       return { uid: result.uid, password: result.password, success: true };
     } catch (error: any) {
       toast({

@@ -68,6 +68,8 @@ import { FullProfileDialog } from '@/components/FullProfileDialog';
 import { ExaminationBadge } from '@/components/ExaminationBadge';
 import { useExaminations } from '@/hooks/useExaminations';
 import { BulkMemberImport } from '@/components/BulkMemberImport';
+import { ExportMembersList } from '@/components/ExportMembersList';
+import { GoogleSheetsIntegration } from '@/components/GoogleSheetsIntegration';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -296,28 +298,7 @@ export default function Members() {
     }
   };
 
-  const handleExport = () => {
-    const csv = [
-      ['UID', 'Name', 'Enrollment', 'Semester', 'WhatsApp', 'Blood Group', 'Status', 'Role'].join(','),
-      ...filteredMembers.map(m => [
-        m.uid,
-        `${m.first_name} ${m.middle_name || ''} ${m.last_name}`.trim(),
-        m.enrollment_number || '',
-        m.current_semester || '',
-        m.whatsapp_number || '',
-        m.blood_group || '',
-        m.status,
-        m.role || 'member',
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bsg_${memberTab}.csv`;
-    a.click();
-  };
+  // Old export function removed - using ExportMembersList component instead
 
   const handleResetPassword = async () => {
     if (!resetPasswordMember) return;
@@ -378,15 +359,19 @@ export default function Members() {
             </p>
           </div>
           <div className="flex gap-3 flex-wrap">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+            <ExportMembersList
+              members={filteredMembers}
+              title={`bsg_${memberTab}`}
+              showAllDetailsOption={true}
+            />
             {isAdminOrCoordinator && (
-              <Button variant="outline" size="sm" onClick={() => setIsBulkImportOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Bulk Import
-              </Button>
+              <>
+                <GoogleSheetsIntegration />
+                <Button variant="outline" size="sm" onClick={() => setIsBulkImportOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bulk Import
+                </Button>
+              </>
             )}
             {isAdmin && (
               <Dialog open={isFacultyDialogOpen} onOpenChange={(open) => {
