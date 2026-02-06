@@ -69,7 +69,7 @@ import { ExaminationBadge } from '@/components/ExaminationBadge';
 import { useExaminations } from '@/hooks/useExaminations';
 import { BulkMemberImport } from '@/components/BulkMemberImport';
 import { ExportMembersList } from '@/components/ExportMembersList';
-import { GoogleSheetsIntegration } from '@/components/GoogleSheetsIntegration';
+
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -366,7 +366,6 @@ export default function Members() {
             />
             {isAdminOrCoordinator && (
               <>
-                <GoogleSheetsIntegration />
                 <Button variant="outline" size="sm" onClick={() => setIsBulkImportOpen(true)}>
                   <Upload className="h-4 w-4 mr-2" />
                   Bulk Import
