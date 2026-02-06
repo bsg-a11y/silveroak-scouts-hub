@@ -34,6 +34,11 @@ interface MemberData {
   role?: string;
   joining_date?: string | null;
   created_at?: string;
+  updated_at?: string;
+  email?: string | null;
+  employee_id?: string | null;
+  is_program_officer?: boolean | null;
+  profile_photo_url?: string | null;
 }
 
 interface ExportMembersListProps {
@@ -79,10 +84,10 @@ export function ExportMembersList({
   
   const getAllHeaders = () => [
     'S.No', 'BSG ID', 'First Name', 'Middle Name', 'Last Name', 'Full Name',
-    'Gender', 'Date of Birth', 'Blood Group', 'WhatsApp Number',
-    'College', 'Academic Department', 'Course Duration', 'Semester', 'Enrollment No.',
-    'Class Coordinator', 'HOD Name', 'Principal Name',
-    'Status', 'Role', 'Joining Date', 'Created At'
+    'Email', 'Gender', 'Date of Birth', 'Blood Group', 'Aadhaar Number', 'WhatsApp Number',
+    'College', 'Academic Department', 'Course Duration', 'Semester', 'Enrollment No.', 'Employee ID',
+    'Class Coordinator', 'HOD Name', 'Principal Name', 'Is Program Officer',
+    'Status', 'Role', 'Joining Date', 'Created At', 'Updated At'
   ];
 
   const getBasicRow = (m: MemberData, idx: number) => [
@@ -102,22 +107,27 @@ export function ExportMembersList({
     m.middle_name || '-',
     m.last_name,
     `${m.first_name} ${m.middle_name || ''} ${m.last_name}`.replace(/\s+/g, ' ').trim(),
+    m.email || '-',
     m.gender || '-',
     formatDate(m.date_of_birth),
     m.blood_group || '-',
+    m.aadhaar_number || '-',
     m.whatsapp_number || '-',
     m.college_name || '-',
     m.academic_department || '-',
     m.course_duration || '-',
     m.current_semester || '-',
     m.enrollment_number || '-',
+    m.employee_id || '-',
     m.class_coordinator_name || '-',
     m.hod_name || '-',
     m.principal_name || '-',
+    m.is_program_officer ? 'Yes' : 'No',
     m.status || '-',
     m.role || '-',
     formatDate(m.joining_date),
     formatDate(m.created_at),
+    formatDate(m.updated_at),
   ];
 
   const exportToCSV = () => {
@@ -181,7 +191,7 @@ export function ExportMembersList({
 
   const printPDF = () => {
     const headers = includeAllDetails 
-      ? ['S.No', 'BSG ID', 'Name', 'Gender', 'DOB', 'Blood', 'Contact', 'College', 'Dept', 'Sem', 'Enrollment', 'Status']
+      ? ['S.No', 'BSG ID', 'Name', 'Email', 'Gender', 'DOB', 'Blood', 'Aadhaar', 'Contact', 'College', 'Dept', 'Sem', 'Enrollment', 'Coordinator', 'HOD', 'Principal', 'Status']
       : ['S.No', 'BSG ID', 'Name', 'Enrollment No.', 'Contact', 'College', 'Sem'];
     
     const getRow = (m: MemberData, idx: number) => {
@@ -191,14 +201,19 @@ export function ExportMembersList({
             <td>${idx + 1}</td>
             <td>${m.uid}</td>
             <td>${m.first_name} ${m.middle_name || ''} ${m.last_name}</td>
+            <td>${m.email || '-'}</td>
             <td>${m.gender || '-'}</td>
             <td>${formatDate(m.date_of_birth)}</td>
             <td>${m.blood_group || '-'}</td>
+            <td>${m.aadhaar_number || '-'}</td>
             <td>${m.whatsapp_number || '-'}</td>
             <td>${m.college_name || '-'}</td>
             <td>${m.academic_department || '-'}</td>
             <td>${m.current_semester || '-'}</td>
             <td>${m.enrollment_number || '-'}</td>
+            <td>${m.class_coordinator_name || '-'}</td>
+            <td>${m.hod_name || '-'}</td>
+            <td>${m.principal_name || '-'}</td>
             <td>${m.status || '-'}</td>
           </tr>
         `;
