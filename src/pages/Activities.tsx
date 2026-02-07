@@ -251,59 +251,59 @@ export default function Activities() {
     return undefined;
   };
 
-  const ActivityForm = ({ isEdit = false }: { isEdit?: boolean }) => (
+  const renderActivityForm = (isEdit = false) => (
     <div className="space-y-4 py-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Activity Name *</Label>
+        <Label htmlFor={`name-${isEdit ? 'edit' : 'add'}`}>Activity Name *</Label>
         <Input
-          id="name"
+          id={`name-${isEdit ? 'edit' : 'add'}`}
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor={`description-${isEdit ? 'edit' : 'add'}`}>Description</Label>
         <Textarea
-          id="description"
+          id={`description-${isEdit ? 'edit' : 'add'}`}
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="activity_date">Date *</Label>
+          <Label htmlFor={`activity_date-${isEdit ? 'edit' : 'add'}`}>Date *</Label>
           <Input
-            id="activity_date"
+            id={`activity_date-${isEdit ? 'edit' : 'add'}`}
             type="date"
             value={formData.activity_date}
-            onChange={(e) => setFormData({ ...formData, activity_date: e.target.value })}
+            onChange={(e) => setFormData(prev => ({ ...prev, activity_date: e.target.value }))}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="activity_time">Time</Label>
+          <Label htmlFor={`activity_time-${isEdit ? 'edit' : 'add'}`}>Time</Label>
           <Input
-            id="activity_time"
+            id={`activity_time-${isEdit ? 'edit' : 'add'}`}
             type="time"
             value={formData.activity_time}
-            onChange={(e) => setFormData({ ...formData, activity_time: e.target.value })}
+            onChange={(e) => setFormData(prev => ({ ...prev, activity_time: e.target.value }))}
           />
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="location">Location</Label>
+        <Label htmlFor={`location-${isEdit ? 'edit' : 'add'}`}>Location</Label>
         <Input
-          id="location"
+          id={`location-${isEdit ? 'edit' : 'add'}`}
           value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="capacity">Capacity (optional)</Label>
+        <Label htmlFor={`capacity-${isEdit ? 'edit' : 'add'}`}>Capacity (optional)</Label>
         <Input
-          id="capacity"
+          id={`capacity-${isEdit ? 'edit' : 'add'}`}
           type="number"
           value={formData.capacity || ''}
-          onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || undefined })}
+          onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || undefined }))}
         />
       </div>
       
@@ -320,7 +320,7 @@ export default function Activities() {
               value={formData.collaboration_college ? formData.collaboration_college : '__none__'}
               onValueChange={(v) => {
                 const value = v === '__none__' ? '' : v;
-                setFormData({ ...formData, collaboration_college: value, collaboration_department: '' });
+                setFormData(prev => ({ ...prev, collaboration_college: value, collaboration_department: '' }));
               }}
             >
               <SelectTrigger>
@@ -348,7 +348,7 @@ export default function Activities() {
               value={formData.collaboration_department ? formData.collaboration_department : '__none__'}
               onValueChange={(v) => {
                 const value = v === '__none__' ? '' : v;
-                setFormData({ ...formData, collaboration_department: value });
+                setFormData(prev => ({ ...prev, collaboration_department: value }));
               }}
               disabled={!formData.collaboration_college || collaborationDepartments.length === 0}
             >
@@ -371,7 +371,7 @@ export default function Activities() {
           <Label>Status</Label>
           <Select 
             value={formData.status ?? 'upcoming'} 
-            onValueChange={(v) => setFormData({ ...formData, status: v })}
+            onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select status" />
@@ -415,7 +415,7 @@ export default function Activities() {
                     Create a new activity for BSG members.
                   </DialogDescription>
                 </DialogHeader>
-                <ActivityForm />
+                {renderActivityForm(false)}
                 <DialogFooter>
                   <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetFormData(); }}>
                     Cancel
@@ -754,7 +754,7 @@ export default function Activities() {
                 Update the activity details.
               </DialogDescription>
             </DialogHeader>
-            <ActivityForm isEdit />
+            {renderActivityForm(true)}
             <DialogFooter>
               <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingActivity(null); resetFormData(); }}>
                 Cancel
