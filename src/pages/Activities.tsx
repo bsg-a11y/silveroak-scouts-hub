@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ActivityForm } from '@/components/ActivityForm';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,57 +55,31 @@ import {
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useActivities, CreateActivityData, RegisteredMember } from '@/hooks/useActivities';
+import { useActivities, RegisteredMember } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
-import { useColleges } from '@/hooks/useColleges';
+
 import { RegisteredMembersList } from '@/components/RegisteredMembersList';
 import { ExportMembersList } from '@/components/ExportMembersList';
 import { useCertificateRequests } from '@/hooks/useCertificateRequests';
-import { getDepartmentsForCollege } from '@/lib/collegeDepartments';
 import { getCollegeColor, getCollegeBgColor } from '@/lib/collegeColors';
-
-interface ActivityFormData extends CreateActivityData {
-  collaboration_college?: string;
-  collaboration_department?: string;
-}
 
 export default function Activities() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedDateActivities, setSelectedDateActivities] = useState<typeof activities>([]);
+  const [selectedDateActivities, setSelectedDateActivities] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteActivityId, setDeleteActivityId] = useState<string | null>(null);
-  const [editingActivity, setEditingActivity] = useState<typeof activities[0] | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<any>(null);
   const [viewRegistrationsDialog, setViewRegistrationsDialog] = useState<string | null>(null);
   const [registeredMembers, setRegisteredMembers] = useState<RegisteredMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
-  const [formData, setFormData] = useState<ActivityFormData>({
-    name: '',
-    description: '',
-    activity_date: '',
-    activity_time: '',
-    location: '',
-    capacity: undefined,
-    registration_enabled: true,
-    collaboration_college: '',
-    collaboration_department: '',
-  });
 
   const { activities, isLoading, createActivity, updateActivity, deleteActivity, registerForActivity, unregisterFromActivity, fetchRegisteredMembers } = useActivities();
   const { isAdminOrCoordinator, user } = useAuth();
-  const { colleges } = useColleges();
   const { createRequest } = useCertificateRequests();
   const [certRequestDialog, setCertRequestDialog] = useState<{ activityId: string; activityName: string } | null>(null);
   const [certRequestReason, setCertRequestReason] = useState('');
-
-  // Get departments based on selected collaboration college
-  const collaborationDepartments = useMemo(() => {
-    if (!formData.collaboration_college) return [];
-    const college = colleges.find(c => c.id === formData.collaboration_college || c.name === formData.collaboration_college);
-    return getDepartmentsForCollege(college?.name || formData.collaboration_college);
-  }, [formData.collaboration_college, colleges]);
 
   // Fetch registered members when dialog opens
   useEffect(() => {
@@ -134,55 +109,12 @@ export default function Activities() {
   const upcomingActivities = activities.filter(a => a.status === 'upcoming');
   const completedActivities = activities.filter(a => a.status === 'completed');
 
-  const resetFormData = () => {
-    setFormData({
-      name: '',
-      description: '',
-      activity_date: '',
-      activity_time: '',
-      location: '',
-      capacity: undefined,
-      registration_enabled: true,
-      collaboration_college: '',
-      collaboration_department: '',
-    });
-  };
-
-  const handleCreateActivity = async () => {
-    if (!formData.name || !formData.activity_date) return;
-
-    setIsCreating(true);
-    const result = await createActivity(formData);
-    setIsCreating(false);
-
-    if (result.success) {
-      setIsAddDialogOpen(false);
-      resetFormData();
-    }
-  };
-
   const handleEditActivity = (activity: typeof activities[0], e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    
-    // Set the editing activity and form data first
     setEditingActivity(activity);
-    setFormData({
-      name: activity.name,
-      description: activity.description || '',
-      activity_date: activity.activity_date,
-      activity_time: activity.activity_time || '',
-      location: activity.location || '',
-      capacity: activity.capacity || undefined,
-      registration_enabled: activity.registration_enabled,
-      status: activity.status,
-      collaboration_college: (activity as any).collaboration_college || '',
-      collaboration_department: (activity as any).collaboration_department || '',
-    });
-    
-    // Close other dialogs and open edit dialog
     setSelectedDateActivities([]);
     setViewRegistrationsDialog(null);
     setIsEditDialogOpen(true);
@@ -194,20 +126,6 @@ export default function Activities() {
       e.stopPropagation();
     }
     await updateActivity(activityId, { status: 'completed' });
-  };
-
-  const handleUpdateActivity = async () => {
-    if (!editingActivity || !formData.name || !formData.activity_date) return;
-
-    setIsCreating(true);
-    const result = await updateActivity(editingActivity.id, formData);
-    setIsCreating(false);
-
-    if (result.success) {
-      setIsEditDialogOpen(false);
-      setEditingActivity(null);
-      resetFormData();
-    }
   };
 
   const handleDeleteActivity = async () => {
@@ -251,141 +169,7 @@ export default function Activities() {
     return undefined;
   };
 
-  const renderActivityForm = (isEdit = false) => (
-    <div className="space-y-4 py-4">
-      <div className="space-y-2">
-        <Label htmlFor={`name-${isEdit ? 'edit' : 'add'}`}>Activity Name *</Label>
-        <Input
-          id={`name-${isEdit ? 'edit' : 'add'}`}
-          value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`description-${isEdit ? 'edit' : 'add'}`}>Description</Label>
-        <Textarea
-          id={`description-${isEdit ? 'edit' : 'add'}`}
-          value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor={`activity_date-${isEdit ? 'edit' : 'add'}`}>Date *</Label>
-          <Input
-            id={`activity_date-${isEdit ? 'edit' : 'add'}`}
-            type="date"
-            value={formData.activity_date}
-            onChange={(e) => setFormData(prev => ({ ...prev, activity_date: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`activity_time-${isEdit ? 'edit' : 'add'}`}>Time</Label>
-          <Input
-            id={`activity_time-${isEdit ? 'edit' : 'add'}`}
-            type="time"
-            value={formData.activity_time}
-            onChange={(e) => setFormData(prev => ({ ...prev, activity_time: e.target.value }))}
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`location-${isEdit ? 'edit' : 'add'}`}>Location</Label>
-        <Input
-          id={`location-${isEdit ? 'edit' : 'add'}`}
-          value={formData.location}
-          onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`capacity-${isEdit ? 'edit' : 'add'}`}>Capacity (optional)</Label>
-        <Input
-          id={`capacity-${isEdit ? 'edit' : 'add'}`}
-          type="number"
-          value={formData.capacity || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || undefined }))}
-        />
-      </div>
-      
-      {/* Collaboration Fields */}
-      <div className="border-t pt-4 mt-4">
-        <Label className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-          <Building2 className="h-4 w-4" />
-          Collaboration (Optional)
-        </Label>
-        <div className="grid grid-cols-2 gap-4 mt-2">
-          <div className="space-y-2">
-            <Label>Collaboration College</Label>
-            <Select 
-              value={formData.collaboration_college ? formData.collaboration_college : '__none__'}
-              onValueChange={(v) => {
-                const value = v === '__none__' ? '' : v;
-                setFormData(prev => ({ ...prev, collaboration_college: value, collaboration_department: '' }));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select college" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
-                {colleges.map(college => (
-                  <SelectItem key={college.id} value={college.name}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: getCollegeColor(college.name) }}
-                      />
-                      {college.short_code} - {college.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Collaboration Department</Label>
-            <Select 
-              value={formData.collaboration_department ? formData.collaboration_department : '__none__'}
-              onValueChange={(v) => {
-                const value = v === '__none__' ? '' : v;
-                setFormData(prev => ({ ...prev, collaboration_department: value }));
-              }}
-              disabled={!formData.collaboration_college || collaborationDepartments.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={collaborationDepartments.length > 0 ? "Select department" : "Select college first"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
-                {collaborationDepartments.map(dept => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
 
-      {isEdit && (
-        <div className="space-y-2">
-          <Label>Status</Label>
-          <Select 
-            value={formData.status ?? 'upcoming'} 
-            onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <DashboardLayout>
@@ -415,22 +199,10 @@ export default function Activities() {
                     Create a new activity for BSG members.
                   </DialogDescription>
                 </DialogHeader>
-                {renderActivityForm(false)}
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetFormData(); }}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateActivity} disabled={isCreating}>
-                    {isCreating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      'Create Activity'
-                    )}
-                  </Button>
-                </DialogFooter>
+                <ActivityForm
+                  onSubmit={(data) => createActivity(data)}
+                  onCancel={() => setIsAddDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           )}
@@ -742,7 +514,6 @@ export default function Activities() {
             if (!open) { 
               setIsEditDialogOpen(false);
               setEditingActivity(null); 
-              resetFormData(); 
             } 
           }}
           modal={true}
@@ -754,22 +525,25 @@ export default function Activities() {
                 Update the activity details.
               </DialogDescription>
             </DialogHeader>
-            {renderActivityForm(true)}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingActivity(null); resetFormData(); }}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateActivity} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  'Update Activity'
-                )}
-              </Button>
-            </DialogFooter>
+            {editingActivity && (
+              <ActivityForm
+                isEdit
+                initialData={{
+                  name: editingActivity.name,
+                  description: editingActivity.description || '',
+                  activity_date: editingActivity.activity_date,
+                  activity_time: editingActivity.activity_time || '',
+                  location: editingActivity.location || '',
+                  capacity: editingActivity.capacity || undefined,
+                  registration_enabled: editingActivity.registration_enabled,
+                  status: editingActivity.status,
+                  collaboration_college: (editingActivity as any).collaboration_college || '',
+                  collaboration_department: (editingActivity as any).collaboration_department || '',
+                }}
+                onSubmit={(data) => updateActivity(editingActivity.id, data)}
+                onCancel={() => { setIsEditDialogOpen(false); setEditingActivity(null); }}
+              />
+            )}
           </DialogContent>
         </Dialog>
 
