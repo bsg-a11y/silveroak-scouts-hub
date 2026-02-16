@@ -163,17 +163,18 @@ export function useMembers() {
         },
       });
 
+      // Handle edge function response - check data first for business errors
+      const result = response.data;
+      
       if (response.error) {
-        // Extract meaningful error message
-        const errorMsg = response.error.message || 'Failed to create member';
-        console.error('Edge function error:', response.error);
+        // Try to get meaningful error from response data first
+        const errorMsg = result?.error || response.error.message || 'Failed to create member';
+        console.error('Edge function error:', response.error, 'Response data:', result);
         throw new Error(errorMsg);
       }
 
-      const result = response.data;
-      if (!result.success) {
-        // Show specific validation or business logic errors
-        const errorMsg = result.error || 'Failed to create member';
+      if (!result || !result.success) {
+        const errorMsg = result?.error || 'Failed to create member';
         console.error('Create member failed:', errorMsg);
         throw new Error(errorMsg);
       }
