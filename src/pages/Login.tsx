@@ -45,9 +45,16 @@ export default function Login() {
         status: (error as any)?.status,
       });
 
+      let description = 'Invalid credentials. Please try again.';
+      if (error.message === 'Failed to fetch' || error.message?.includes('NetworkError')) {
+        description = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message) {
+        description = error.message;
+      }
+
       toast({
         title: 'Login Failed',
-        description: error.message || 'Invalid credentials. Please try again.',
+        description,
         variant: 'destructive',
       });
       setIsLoading(false);
