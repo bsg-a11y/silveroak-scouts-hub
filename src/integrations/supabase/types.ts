@@ -358,6 +358,8 @@ export type Database = {
           activity_id: string | null
           admin_comment: string | null
           created_at: string
+          custom_activity_date: string | null
+          custom_activity_name: string | null
           id: string
           reason: string
           reviewed_at: string | null
@@ -369,6 +371,8 @@ export type Database = {
           activity_id?: string | null
           admin_comment?: string | null
           created_at?: string
+          custom_activity_date?: string | null
+          custom_activity_name?: string | null
           id?: string
           reason: string
           reviewed_at?: string | null
@@ -380,6 +384,8 @@ export type Database = {
           activity_id?: string | null
           admin_comment?: string | null
           created_at?: string
+          custom_activity_date?: string | null
+          custom_activity_name?: string | null
           id?: string
           reason?: string
           reviewed_at?: string | null

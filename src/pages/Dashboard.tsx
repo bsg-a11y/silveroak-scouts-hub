@@ -306,12 +306,13 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Attendance Overview</CardTitle>
-                <CardDescription>This month's attendance statistics</CardDescription>
+                <CardDescription>Real attendance data from activities & meetings</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Overall Attendance */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Average Attendance</span>
+                    <span className="text-sm text-muted-foreground">Overall Attendance</span>
                     <span className="text-2xl font-bold font-display text-bsg-green">
                       {stats.attendancePercentage || 0}%
                     </span>
@@ -322,12 +323,47 @@ export default function Dashboard() {
                       style={{ width: `${stats.attendancePercentage || 0}%` }}
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-4 pt-4">
+
+                  {/* Activity & Meeting Breakdown */}
+                  <div className="grid grid-cols-2 gap-4 pt-4">
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs text-muted-foreground">Activity Attendance</p>
+                        <span className="text-sm font-bold text-foreground">{stats.activityAttendancePercentage || 0}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div 
+                          className="h-full rounded-full bg-primary transition-all duration-500" 
+                          style={{ width: `${stats.activityAttendancePercentage || 0}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stats.totalActivitiesWithAttendance} activities tracked
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs text-muted-foreground">Meeting Attendance</p>
+                        <span className="text-sm font-bold text-foreground">{stats.meetingAttendancePercentage || 0}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div 
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-500" 
+                          style={{ width: `${stats.meetingAttendancePercentage || 0}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stats.totalMeetingsWithAttendance} meetings tracked
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 pt-2">
                     <div className="text-center p-3 rounded-lg bg-muted/50">
                       <p className="text-2xl font-bold font-display text-foreground">
                         {stats.upcomingActivities}
                       </p>
-                      <p className="text-xs text-muted-foreground">Activities</p>
+                      <p className="text-xs text-muted-foreground">Upcoming</p>
                     </div>
                     <div className="text-center p-3 rounded-lg bg-muted/50">
                       <p className="text-2xl font-bold font-display text-foreground">

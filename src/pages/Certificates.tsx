@@ -39,6 +39,9 @@ export default function Certificates() {
   const [requestData, setRequestData] = useState({
     activity_id: '',
     reason: '',
+    custom_activity_name: '',
+    custom_activity_date: '',
+    request_type: 'existing' as 'existing' | 'custom',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,9 +53,17 @@ export default function Certificates() {
 
   const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!requestData.activity_id || !requestData.reason.trim()) return;
-    await createRequest.mutateAsync(requestData);
-    setRequestData({ activity_id: '', reason: '' });
+    if (requestData.request_type === 'existing' && !requestData.activity_id) return;
+    if (requestData.request_type === 'custom' && !requestData.custom_activity_name.trim()) return;
+    if (!requestData.reason.trim()) return;
+    
+    await createRequest.mutateAsync({
+      activity_id: requestData.request_type === 'existing' ? requestData.activity_id : undefined,
+      reason: requestData.reason,
+      custom_activity_name: requestData.request_type === 'custom' ? requestData.custom_activity_name : undefined,
+      custom_activity_date: requestData.request_type === 'custom' && requestData.custom_activity_date ? requestData.custom_activity_date : undefined,
+    });
+    setRequestData({ activity_id: '', reason: '', custom_activity_name: '', custom_activity_date: '', request_type: 'existing' });
     setIsRequestDialogOpen(false);
   };
 
@@ -123,24 +134,64 @@ export default function Certificates() {
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleRequestSubmit} className="space-y-4">
+                    {/* Request Type Toggle */}
                     <div className="space-y-2">
-                      <Label>Select Activity</Label>
+                      <Label>Request Type</Label>
                       <Select
-                        value={requestData.activity_id}
-                        onValueChange={(v) => setRequestData({ ...requestData, activity_id: v })}
+                        value={requestData.request_type}
+                        onValueChange={(v) => setRequestData({ ...requestData, request_type: v as 'existing' | 'custom', activity_id: '', custom_activity_name: '', custom_activity_date: '' })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose an activity" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {completedActivities.map((activity) => (
-                            <SelectItem key={activity.id} value={activity.id}>
-                              {activity.name} - {format(new Date(activity.activity_date), 'MMM d, yyyy')}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="existing">From Completed Activity</SelectItem>
+                          <SelectItem value="custom">Custom Activity / Event</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {requestData.request_type === 'existing' ? (
+                      <div className="space-y-2">
+                        <Label>Select Activity</Label>
+                        <Select
+                          value={requestData.activity_id}
+                          onValueChange={(v) => setRequestData({ ...requestData, activity_id: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose an activity" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {completedActivities.map((activity) => (
+                              <SelectItem key={activity.id} value={activity.id}>
+                                {activity.name} - {format(new Date(activity.activity_date), 'MMM d, yyyy')}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Activity / Event Name</Label>
+                          <Input
+                            value={requestData.custom_activity_name}
+                            onChange={(e) => setRequestData({ ...requestData, custom_activity_name: e.target.value })}
+                            placeholder="Enter activity or event name"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Activity Date</Label>
+                          <Input
+                            type="date"
+                            value={requestData.custom_activity_date}
+                            onChange={(e) => setRequestData({ ...requestData, custom_activity_date: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Reason for Request</Label>
                       <Textarea
@@ -155,7 +206,7 @@ export default function Certificates() {
                       <Button variant="outline" type="button" onClick={() => setIsRequestDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button type="submit" disabled={createRequest.isPending || !requestData.activity_id}>
+                      <Button type="submit" disabled={createRequest.isPending || (requestData.request_type === 'existing' && !requestData.activity_id) || (requestData.request_type === 'custom' && !requestData.custom_activity_name.trim())}>
                         {createRequest.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -357,7 +408,9 @@ export default function Certificates() {
                               <Badge variant="warning">Pending</Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mb-1">
-                              Activity: {req.activity?.name}
+                              Activity: {req.activity?.name || req.custom_activity_name || 'Custom Request'}
+                              {req.custom_activity_date && ` - ${format(new Date(req.custom_activity_date), 'MMM d, yyyy')}`}
+                              {req.activity?.activity_date && !req.custom_activity_date && ` - ${format(new Date(req.activity.activity_date), 'MMM d, yyyy')}`}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               Reason: {req.reason}

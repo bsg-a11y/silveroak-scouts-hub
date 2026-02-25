@@ -6,6 +6,8 @@ export interface CertificateRequest {
   id: string;
   user_id: string;
   activity_id: string | null;
+  custom_activity_name: string | null;
+  custom_activity_date: string | null;
   reason: string;
   status: string;
   admin_comment: string | null;
@@ -68,15 +70,31 @@ export function useCertificateRequests(userId?: string) {
   });
 
   const createRequest = useMutation({
-    mutationFn: async ({ activity_id, reason }: { activity_id: string; reason: string }) => {
+    mutationFn: async ({ activity_id, reason, custom_activity_name, custom_activity_date }: { 
+      activity_id?: string; 
+      reason: string;
+      custom_activity_name?: string;
+      custom_activity_date?: string;
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase.from('certificate_requests').insert({
+      const insertData: Record<string, any> = {
         user_id: user.id,
-        activity_id,
         reason,
-      });
+      };
+
+      if (activity_id) {
+        insertData.activity_id = activity_id;
+      }
+      if (custom_activity_name) {
+        insertData.custom_activity_name = custom_activity_name;
+      }
+      if (custom_activity_date) {
+        insertData.custom_activity_date = custom_activity_date;
+      }
+
+      const { error } = await supabase.from('certificate_requests').insert(insertData as any);
 
       if (error) throw error;
     },
