@@ -8,9 +8,13 @@ export interface DashboardStats {
   pendingLeaveRequests: number;
   lowStockItems: number;
   attendancePercentage: number;
+  activityAttendancePercentage: number;
+  meetingAttendancePercentage: number;
   activityRegistrations: number;
   upcomingMeetings: number;
   meetingAttendees: number;
+  totalActivitiesWithAttendance: number;
+  totalMeetingsWithAttendance: number;
 }
 
 export function useDashboardStats() {
@@ -21,9 +25,13 @@ export function useDashboardStats() {
     pendingLeaveRequests: 0,
     lowStockItems: 0,
     attendancePercentage: 0,
+    activityAttendancePercentage: 0,
+    meetingAttendancePercentage: 0,
     activityRegistrations: 0,
     upcomingMeetings: 0,
     meetingAttendees: 0,
+    totalActivitiesWithAttendance: 0,
+    totalMeetingsWithAttendance: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,12 +49,10 @@ export function useDashboardStats() {
       const facultyUserIds = facultyRoles?.map(r => r.user_id) || [];
 
       // Fetch members count (excluding program officer and faculty coordinators)
-      // Build query without faculty coordinators
       const { data: allProfiles } = await supabase
         .from('profiles')
         .select('user_id, status, is_program_officer');
       
-      // Filter out program officers and faculty coordinators
       const regularProfiles = (allProfiles || []).filter(p => 
         !p.is_program_officer && !facultyUserIds.includes(p.user_id)
       );
@@ -110,18 +116,44 @@ export function useDashboardStats() {
         .select('*', { count: 'exact', head: true })
         .lt('available_quantity', 10);
 
-      // Calculate attendance percentage (present / total * 100)
-      const { count: totalAttendance } = await supabase
+      // Calculate REAL attendance percentages from actual attendance records
+      // Activity attendance
+      const { data: activityAttendance } = await supabase
         .from('attendance')
-        .select('*', { count: 'exact', head: true });
+        .select('status, activity_id')
+        .not('activity_id', 'is', null);
 
-      const { count: presentCount } = await supabase
+      const activityTotal = activityAttendance?.length || 0;
+      const activityPresent = activityAttendance?.filter(a => a.status === 'present').length || 0;
+      const activityAttendancePercentage = activityTotal > 0 
+        ? Math.round((activityPresent / activityTotal) * 100) 
+        : 0;
+
+      // Count unique activities with attendance records
+      const uniqueActivityIds = new Set(activityAttendance?.map(a => a.activity_id));
+      const totalActivitiesWithAttendance = uniqueActivityIds.size;
+
+      // Meeting attendance
+      const { data: meetingAttendance } = await supabase
         .from('attendance')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'present');
+        .select('status, meeting_id')
+        .not('meeting_id', 'is', null);
 
-      const attendancePercentage = totalAttendance 
-        ? Math.round((presentCount || 0) / totalAttendance * 100) 
+      const meetingTotal = meetingAttendance?.length || 0;
+      const meetingPresent = meetingAttendance?.filter(a => a.status === 'present').length || 0;
+      const meetingAttendancePercentage = meetingTotal > 0 
+        ? Math.round((meetingPresent / meetingTotal) * 100) 
+        : 0;
+
+      // Count unique meetings with attendance records
+      const uniqueMeetingIds = new Set(meetingAttendance?.map(a => a.meeting_id));
+      const totalMeetingsWithAttendance = uniqueMeetingIds.size;
+
+      // Overall attendance percentage (combined)
+      const overallTotal = activityTotal + meetingTotal;
+      const overallPresent = activityPresent + meetingPresent;
+      const attendancePercentage = overallTotal > 0 
+        ? Math.round((overallPresent / overallTotal) * 100) 
         : 0;
 
       setStats({
@@ -131,9 +163,13 @@ export function useDashboardStats() {
         pendingLeaveRequests: pendingLeaveRequests || 0,
         lowStockItems: lowStockItems || 0,
         attendancePercentage,
+        activityAttendancePercentage,
+        meetingAttendancePercentage,
         activityRegistrations,
         upcomingMeetings: upcomingMeetings || 0,
         meetingAttendees,
+        totalActivitiesWithAttendance,
+        totalMeetingsWithAttendance,
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);

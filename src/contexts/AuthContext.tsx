@@ -43,32 +43,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchProfile = async (userId: string) => {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+  const fetchProfile = async (userId: string, retryCount = 0) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (profileError) {
-      console.error('Error fetching profile:', profileError);
-      return;
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        // Retry up to 2 times with delay for RLS timing issues
+        if (retryCount < 2) {
+          console.log(`Retrying profile fetch (attempt ${retryCount + 2})...`);
+          setTimeout(() => fetchProfile(userId, retryCount + 1), 1000);
+          return;
+        }
+        return;
+      }
+
+      setProfile(profileData);
+
+      // Fetch roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        // Retry for roles too
+        if (retryCount < 2) {
+          setTimeout(() => fetchProfile(userId, retryCount + 1), 1000);
+          return;
+        }
+        return;
+      }
+
+      setRoles(rolesData?.map(r => r.role as UserRole) || []);
+    } catch (err) {
+      console.error('Unexpected error fetching profile:', err);
+      if (retryCount < 2) {
+        setTimeout(() => fetchProfile(userId, retryCount + 1), 1500);
+      }
     }
-
-    setProfile(profileData);
-
-    // Fetch roles
-    const { data: rolesData, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-
-    if (rolesError) {
-      console.error('Error fetching roles:', rolesError);
-      return;
-    }
-
-    setRoles(rolesData?.map(r => r.role as UserRole) || []);
   };
 
   useEffect(() => {
