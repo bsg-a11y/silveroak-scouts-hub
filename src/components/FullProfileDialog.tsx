@@ -136,12 +136,18 @@ export function FullProfileDialog({ userId, open, onOpenChange }: FullProfileDia
 
       setAttendance(enrichedAttendance);
 
+      // Fetch total registered activities
+      const { count: totalRegistered } = await supabase
+        .from('activity_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
       const activityRecords = enrichedAttendance.filter(a => a.activity);
       const meetingRecords = enrichedAttendance.filter(a => a.meeting);
       
       setStats({
         activityPresent: activityRecords.filter(a => a.status === 'present').length,
-        activityTotal: activityRecords.length,
+        activityTotal: totalRegistered || activityRecords.length,
         meetingPresent: meetingRecords.filter(a => a.status === 'present').length,
         meetingTotal: meetingRecords.length,
       });

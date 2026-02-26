@@ -74,6 +74,7 @@ export default function Profile() {
   const { user, profile: authProfile, roles } = useAuth();
   const [fullProfile, setFullProfile] = useState<FullProfile | null>(null);
   const [activityHistory, setActivityHistory] = useState<ActivityHistory[]>([]);
+  const [totalActivitiesRegistered, setTotalActivitiesRegistered] = useState(0);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +97,12 @@ export default function Profile() {
           setFullProfile(profileData);
         }
 
+        // Fetch total registered activities
+        const { count: totalRegistered } = await supabase
+          .from('activity_registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
         // Fetch attendance records with activity details
         const { data: attendanceData } = await supabase
           .from('attendance')
@@ -112,6 +119,8 @@ export default function Profile() {
           .not('activity_id', 'is', null)
           .order('marked_at', { ascending: false });
 
+        const totalActivitiesRegistered = totalRegistered || 0;
+
         if (attendanceData) {
           const history = attendanceData
             .filter(a => a.activities)
@@ -123,6 +132,8 @@ export default function Profile() {
             }));
           setActivityHistory(history);
         }
+
+        setTotalActivitiesRegistered(totalActivitiesRegistered);
 
         // Fetch certificates
         const { data: certsData } = await supabase
@@ -166,8 +177,9 @@ export default function Profile() {
   }
 
   const fullName = `${fullProfile.first_name} ${fullProfile.middle_name || ''} ${fullProfile.last_name}`.trim();
-  const attendancePercentage = activityHistory.length > 0
-    ? Math.round((activityHistory.filter(a => a.attended).length / activityHistory.length) * 100)
+  const activitiesAttended = activityHistory.filter(a => a.attended).length;
+  const attendancePercentage = totalActivitiesRegistered > 0
+    ? Math.round((activitiesAttended / totalActivitiesRegistered) * 100)
     : 0;
   const userRole = (roles[0] || 'member') as UserRole;
 
@@ -271,7 +283,7 @@ export default function Profile() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold font-display">{attendancePercentage}%</p>
-                  <p className="text-xs text-muted-foreground">Attendance</p>
+                  <p className="text-xs text-muted-foreground">Attendance ({activitiesAttended}/{totalActivitiesRegistered})</p>
                 </div>
               </div>
             </CardContent>
@@ -283,8 +295,8 @@ export default function Profile() {
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{activityHistory.length}</p>
-                  <p className="text-xs text-muted-foreground">Activities</p>
+                  <p className="text-2xl font-bold font-display">{totalActivitiesRegistered}</p>
+                  <p className="text-xs text-muted-foreground">Registered</p>
                 </div>
               </div>
             </CardContent>

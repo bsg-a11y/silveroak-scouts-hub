@@ -100,13 +100,19 @@ export function MemberDetailsDialog({ member, open, onOpenChange }: MemberDetail
 
       setAttendance(enrichedAttendance);
 
-      // Calculate stats
+      // Fetch total registered activities
+      const { count: totalRegistered } = await supabase
+        .from('activity_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', member.user_id);
+
+      // Calculate stats - use registrations as total for activities
       const activityRecords = enrichedAttendance.filter(a => a.activity);
       const meetingRecords = enrichedAttendance.filter(a => a.meeting);
       
       setStats({
         activityPresent: activityRecords.filter(a => a.status === 'present').length,
-        activityTotal: activityRecords.length,
+        activityTotal: totalRegistered || activityRecords.length,
         meetingPresent: meetingRecords.filter(a => a.status === 'present').length,
         meetingTotal: meetingRecords.length,
       });
