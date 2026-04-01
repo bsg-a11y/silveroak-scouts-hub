@@ -33,23 +33,59 @@ export default function Login() {
     setIsLoading(true);
 
     const identifier = uid.trim();
-    const { error } = identifier.includes('@')
-      ? await signIn(identifier, password)
-      : await signInWithUid(identifier, password);
+    
+    // Retry logic for network issues
+    let lastError: Error | null = null;
+    const maxRetries = 3;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const { error } = identifier.includes('@')
+          ? await signIn(identifier, password)
+          : await signInWithUid(identifier, password);
+        
+        if (error) {
+          // If it's a network error, retry
+          if ((error.message === 'Failed to fetch' || error.message?.includes('NetworkError') || error.message?.includes('fetch')) && attempt < maxRetries - 1) {
+            lastError = error;
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+          lastError = error;
+        } else {
+          // Success
+          toast({
+            title: 'Login Successful',
+            description: 'Welcome back to BSG Portal!',
+          });
+          navigate('/dashboard');
+          return;
+        }
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (attempt < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        break;
+      }
+    }
 
-    if (error) {
+    // All attempts failed
+    if (lastError) {
       console.warn('[Login] Sign-in failed', {
         identifier,
-        message: error.message,
-        name: (error as any)?.name,
-        status: (error as any)?.status,
+        message: lastError.message,
       });
 
       let description = 'Invalid credentials. Please try again.';
-      if (error.message === 'Failed to fetch' || error.message?.includes('NetworkError')) {
-        description = 'Network error. Please check your internet connection and try again.';
-      } else if (error.message) {
-        description = error.message;
+      if (lastError.message === 'Failed to fetch' || lastError.message?.includes('NetworkError') || lastError.message?.includes('fetch')) {
+        description = 'Unable to connect to the server. Please try again in a moment, or use the published URL: bsgsilveroakuniversity.lovable.app';
+      } else if (lastError.message === 'Invalid login credentials') {
+        description = 'Invalid UID or password. Please check your credentials and try again.';
+      } else if (lastError.message) {
+        description = lastError.message;
       }
 
       toast({
@@ -57,14 +93,8 @@ export default function Login() {
         description,
         variant: 'destructive',
       });
-      setIsLoading(false);
-    } else {
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome back to BSG Portal!',
-      });
-      navigate('/dashboard');
     }
+    setIsLoading(false);
   };
 
   return (

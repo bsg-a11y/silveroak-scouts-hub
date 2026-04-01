@@ -86,6 +86,7 @@ export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [memberTab, setMemberTab] = useState<'members' | 'faculty' | 'all'>('members');
   const [examStageFilter, setExamStageFilter] = useState<string>('all');
+  const [collegeFilter, setCollegeFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -174,6 +175,11 @@ export default function Members() {
       (member.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     if (!matchesSearch) return false;
+
+    // College filter
+    if (collegeFilter !== 'all') {
+      if ((member.college_name || '') !== collegeFilter) return false;
+    }
     
     // Exam stage filter
     if (examStageFilter !== 'all') {
@@ -872,6 +878,19 @@ export default function Members() {
                     className="pl-9 w-64"
                   />
                 </div>
+                <Select value={collegeFilter} onValueChange={setCollegeFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by college" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Colleges</SelectItem>
+                    {colleges.map(college => (
+                      <SelectItem key={college.id} value={college.name}>
+                        {college.short_code} - {college.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {memberTab !== 'faculty' && (
                   <Select value={examStageFilter} onValueChange={setExamStageFilter}>
                     <SelectTrigger className="w-[180px]">

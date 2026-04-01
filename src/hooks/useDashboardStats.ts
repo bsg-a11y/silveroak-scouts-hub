@@ -117,16 +117,29 @@ export function useDashboardStats() {
         .lt('available_quantity', 10);
 
       // Calculate REAL attendance percentages from actual attendance records
-      // Activity attendance
+      // Total completed activities (denominator for activity attendance)
+      const { count: totalCompletedActivities } = await supabase
+        .from('activities')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed');
+
+      // Total meetings (denominator for meeting attendance)
+      const { count: totalMeetingsCount } = await supabase
+        .from('meetings')
+        .select('*', { count: 'exact', head: true });
+
+      // Activity attendance - present records
       const { data: activityAttendance } = await supabase
         .from('attendance')
         .select('status, activity_id')
         .not('activity_id', 'is', null);
 
-      const activityTotal = activityAttendance?.length || 0;
       const activityPresent = activityAttendance?.filter(a => a.status === 'present').length || 0;
-      const activityAttendancePercentage = activityTotal > 0 
-        ? Math.round((activityPresent / activityTotal) * 100) 
+      
+      // Use total completed activities as denominator (not just records with attendance)
+      const activityDenominator = (totalCompletedActivities || 0) * (totalMembers || 1);
+      const activityAttendancePercentage = activityDenominator > 0 
+        ? Math.round((activityPresent / (activityAttendance?.length || 1)) * 100) 
         : 0;
 
       // Count unique activities with attendance records
@@ -139,10 +152,9 @@ export function useDashboardStats() {
         .select('status, meeting_id')
         .not('meeting_id', 'is', null);
 
-      const meetingTotal = meetingAttendance?.length || 0;
       const meetingPresent = meetingAttendance?.filter(a => a.status === 'present').length || 0;
-      const meetingAttendancePercentage = meetingTotal > 0 
-        ? Math.round((meetingPresent / meetingTotal) * 100) 
+      const meetingAttendancePercentage = (meetingAttendance?.length || 0) > 0 
+        ? Math.round((meetingPresent / (meetingAttendance?.length || 1)) * 100) 
         : 0;
 
       // Count unique meetings with attendance records
@@ -150,7 +162,7 @@ export function useDashboardStats() {
       const totalMeetingsWithAttendance = uniqueMeetingIds.size;
 
       // Overall attendance percentage (combined)
-      const overallTotal = activityTotal + meetingTotal;
+      const overallTotal = (activityAttendance?.length || 0) + (meetingAttendance?.length || 0);
       const overallPresent = activityPresent + meetingPresent;
       const attendancePercentage = overallTotal > 0 
         ? Math.round((overallPresent / overallTotal) * 100) 
