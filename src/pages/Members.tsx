@@ -878,6 +878,19 @@ export default function Members() {
                     className="pl-9 w-64"
                   />
                 </div>
+                <Select value={collegeFilter} onValueChange={setCollegeFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by college" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Colleges</SelectItem>
+                    {colleges.map(college => (
+                      <SelectItem key={college.id} value={college.name}>
+                        {college.short_code} - {college.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {memberTab !== 'faculty' && (
                   <Select value={examStageFilter} onValueChange={setExamStageFilter}>
                     <SelectTrigger className="w-[180px]">
