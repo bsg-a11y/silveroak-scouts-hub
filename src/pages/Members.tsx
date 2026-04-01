@@ -86,6 +86,7 @@ export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [memberTab, setMemberTab] = useState<'members' | 'faculty' | 'all'>('members');
   const [examStageFilter, setExamStageFilter] = useState<string>('all');
+  const [collegeFilter, setCollegeFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
