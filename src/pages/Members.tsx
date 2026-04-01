@@ -175,6 +175,11 @@ export default function Members() {
       (member.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     if (!matchesSearch) return false;
+
+    // College filter
+    if (collegeFilter !== 'all') {
+      if ((member.college_name || '') !== collegeFilter) return false;
+    }
     
     // Exam stage filter
     if (examStageFilter !== 'all') {
