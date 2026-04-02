@@ -135,6 +135,12 @@ export default function StudentReports() {
     }
   };
 
+  const handlePreview = async (report: typeof reports[0]) => {
+    setPreviewReport(report);
+    const url = await getReportDownloadUrl(report.file_url);
+    setPreviewUrl(url);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'submitted':
