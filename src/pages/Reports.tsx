@@ -418,6 +418,16 @@ export default function Reports() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewReport}
+          onOpenChange={(open) => { if (!open) { setPreviewReport(null); setPreviewUrl(null); } }}
+          title={previewReport?.title || ''}
+          fileUrl={previewUrl}
+          fileType={previewReport?.file_type}
+          onDownload={() => previewReport && handleDownload(previewReport)}
+        />
       </div>
     </DashboardLayout>
   );
