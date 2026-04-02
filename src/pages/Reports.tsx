@@ -266,6 +266,14 @@ export default function Reports() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
+                            onClick={() => handlePreview(report)}
+                            title="Preview"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             onClick={() => handleDownload(report)}
                             disabled={downloadingId === report.id}
                           >
