@@ -44,6 +44,7 @@ import {
   Users,
 } from 'lucide-react';
 import { DragDropUpload } from '@/components/DragDropUpload';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { useStudentReports } from '@/hooks/useStudentReports';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
