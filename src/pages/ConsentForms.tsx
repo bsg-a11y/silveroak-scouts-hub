@@ -140,6 +140,12 @@ export default function ConsentForms() {
     }
   };
 
+  const handlePreview = async (form: typeof forms[0]) => {
+    setPreviewForm(form);
+    const url = await getDownloadUrl(form.file_url);
+    setPreviewUrl(url);
+  };
+
   const openEditDialog = (form: typeof forms[0]) => {
     setSelectedForm(form);
     setEditFormData({
