@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { CalendarCheck, CalendarX, FileText, Package, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,34 +56,54 @@ export function MemberDetailsDialog({ member, open, onOpenChange }: MemberDetail
     meetingTotal: 0,
   });
 
-  useEffect(() => {
-    if (member && open) {
-      fetchMemberData();
-    }
-  }, [member, open]);
-
-  const fetchMemberData = async () => {
+  const fetchMemberData = useCallback(async (showLoading = true) => {
     if (!member) return;
-    setIsLoading(true);
+
+    if (showLoading) {
+      setIsLoading(true);
+    }
 
     try {
-      // Fetch attendance records
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('id, status, marked_at, activity_id, meeting_id')
-        .eq('user_id', member.user_id)
-        .order('marked_at', { ascending: false });
+      const today = new Date().toISOString().split('T')[0];
+
+      const [attendanceResult, completedActivitiesResult, completedMeetingsResult, leaveResult, inventoryResult] = await Promise.all([
+        supabase
+          .from('attendance')
+          .select('id, status, marked_at, activity_id, meeting_id')
+          .eq('user_id', member.user_id)
+          .order('marked_at', { ascending: false }),
+        supabase
+          .from('activities')
+          .select('id')
+          .eq('status', 'completed'),
+        supabase
+          .from('meetings')
+          .select('id')
+          .lte('meeting_date', today),
+        supabase
+          .from('leave_requests')
+          .select('*')
+          .eq('user_id', member.user_id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('resource_assignments')
+          .select('id, quantity, assigned_at, returned_at, resource_id')
+          .eq('user_id', member.user_id)
+          .order('assigned_at', { ascending: false }),
+      ]);
+
+      const attendanceData = attendanceResult.data || [];
 
       // Fetch activity and meeting details
-      const activityIds = [...new Set(attendanceData?.filter(a => a.activity_id).map(a => a.activity_id) || [])];
-      const meetingIds = [...new Set(attendanceData?.filter(a => a.meeting_id).map(a => a.meeting_id) || [])];
+      const activityIds = [...new Set(attendanceData.filter(a => a.activity_id).map(a => a.activity_id))];
+      const meetingIds = [...new Set(attendanceData.filter(a => a.meeting_id).map(a => a.meeting_id))];
 
       const [activitiesResult, meetingsResult] = await Promise.all([
-        activityIds.length > 0 ? supabase.from('activities').select('id, name, activity_date').in('id', activityIds) : { data: [] },
+        activityIds.length > 0 ? supabase.from('activities').select('id, name, activity_date, status').in('id', activityIds) : { data: [] },
         meetingIds.length > 0 ? supabase.from('meetings').select('id, title, meeting_date').in('id', meetingIds) : { data: [] },
       ]);
 
-      const activityMap = new Map<string, { id: string; name: string; activity_date: string }>();
+      const activityMap = new Map<string, { id: string; name: string; activity_date: string; status: string }>();
       activitiesResult.data?.forEach(a => activityMap.set(a.id, a));
       
       const meetingMap = new Map<string, { id: string; title: string; meeting_date: string }>();
@@ -100,41 +119,33 @@ export function MemberDetailsDialog({ member, open, onOpenChange }: MemberDetail
 
       setAttendance(enrichedAttendance);
 
-      // Fetch total registered activities
-      const { count: totalRegistered } = await supabase
-        .from('activity_registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', member.user_id);
+      const completedActivityIds = new Set((completedActivitiesResult.data || []).map(activity => activity.id));
+      const completedMeetingIds = new Set((completedMeetingsResult.data || []).map(meeting => meeting.id));
 
-      // Calculate stats - use registrations as total for activities
-      const activityRecords = enrichedAttendance.filter(a => a.activity);
-      const meetingRecords = enrichedAttendance.filter(a => a.meeting);
+      const activityPresent = new Set(
+        attendanceData
+          .filter(record => record.status === 'present' && record.activity_id && completedActivityIds.has(record.activity_id))
+          .map(record => record.activity_id)
+      ).size;
+
+      const meetingPresent = new Set(
+        attendanceData
+          .filter(record => record.status === 'present' && record.meeting_id && completedMeetingIds.has(record.meeting_id))
+          .map(record => record.meeting_id)
+      ).size;
       
       setStats({
-        activityPresent: activityRecords.filter(a => a.status === 'present').length,
-        activityTotal: totalRegistered || activityRecords.length,
-        meetingPresent: meetingRecords.filter(a => a.status === 'present').length,
-        meetingTotal: meetingRecords.length,
+        activityPresent,
+        activityTotal: completedActivityIds.size,
+        meetingPresent,
+        meetingTotal: completedMeetingIds.size,
       });
 
-      // Fetch leave requests
-      const { data: leaveData } = await supabase
-        .from('leave_requests')
-        .select('*')
-        .eq('user_id', member.user_id)
-        .order('created_at', { ascending: false });
-
-      setLeaves(leaveData || []);
-
-      // Fetch inventory assignments
-      const { data: inventoryData } = await supabase
-        .from('resource_assignments')
-        .select('id, quantity, assigned_at, returned_at, resource_id')
-        .eq('user_id', member.user_id)
-        .order('assigned_at', { ascending: false });
+      setLeaves(leaveResult.data || []);
 
       // Fetch resource details
-      const resourceIds = [...new Set(inventoryData?.map(i => i.resource_id) || [])];
+      const inventoryData = inventoryResult.data || [];
+      const resourceIds = [...new Set(inventoryData.map(i => i.resource_id))];
       const { data: resourcesData } = resourceIds.length > 0 
         ? await supabase.from('resources').select('id, name, category').in('id', resourceIds)
         : { data: [] };
@@ -155,7 +166,36 @@ export function MemberDetailsDialog({ member, open, onOpenChange }: MemberDetail
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [member]);
+
+  useEffect(() => {
+    if (!member || !open) return;
+
+    void fetchMemberData();
+
+    const channel = supabase
+      .channel(`member-details-${member.user_id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'attendance', filter: `user_id=eq.${member.user_id}` },
+        () => void fetchMemberData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'activities' },
+        () => void fetchMemberData(false)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'meetings' },
+        () => void fetchMemberData(false)
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchMemberData, member, open]);
 
   if (!member) return null;
 
