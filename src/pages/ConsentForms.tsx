@@ -463,6 +463,16 @@ export default function ConsentForms() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewForm}
+          onOpenChange={(open) => { if (!open) { setPreviewForm(null); setPreviewUrl(null); } }}
+          title={previewForm?.title || ''}
+          fileUrl={previewUrl}
+          fileType={previewForm?.file_type}
+          onDownload={() => previewForm && handleDownload(previewForm)}
+        />
       </div>
     </DashboardLayout>
   );
