@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Calendar, MapPin, Clock, FileText, Trash2, Users, Eye } from 'lucide-react';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { format, isPast, isToday } from 'date-fns';
 import { useMeetings, MeetingAttendee } from '@/hooks/useMeetings';
 import { useAuth } from '@/contexts/AuthContext';
