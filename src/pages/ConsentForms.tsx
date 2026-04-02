@@ -50,6 +50,8 @@ export default function ConsentForms() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [previewForm, setPreviewForm] = useState<typeof forms[0] | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [uploadFormData, setUploadFormData] = useState({
     title: '',
