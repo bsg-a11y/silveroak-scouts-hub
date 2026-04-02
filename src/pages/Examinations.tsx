@@ -82,6 +82,7 @@ export default function Examinations() {
     description: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewMaterial, setPreviewMaterial] = useState<typeof materials[0] | null>(null);
 
   // Status update form
   const [statusForm, setStatusForm] = useState({
