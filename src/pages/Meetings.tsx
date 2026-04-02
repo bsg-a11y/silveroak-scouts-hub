@@ -287,6 +287,15 @@ export default function Meetings() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* MoM Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewMomUrl}
+          onOpenChange={(open) => { if (!open) setPreviewMomUrl(null); }}
+          title={previewMomTitle}
+          fileUrl={previewMomUrl}
+          fileType={previewMomUrl?.split('.').pop() || null}
+        />
       </div>
     </DashboardLayout>
   );
