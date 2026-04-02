@@ -46,6 +46,7 @@ import {
   Download,
   CheckCircle,
   Clock,
+  Eye,
 } from 'lucide-react';
 import { useExaminations, useExaminationStats } from '@/hooks/useExaminations';
 import { useMembers } from '@/hooks/useMembers';
