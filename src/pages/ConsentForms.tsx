@@ -263,7 +263,16 @@ export default function ConsentForms() {
                             <Button
                               variant="ghost"
                               size="icon-sm"
+                              onClick={() => handlePreview(form)}
+                              title="Preview"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
                               onClick={() => handleDownload(form)}
+                              title="Download"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
