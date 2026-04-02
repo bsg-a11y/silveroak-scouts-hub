@@ -35,6 +35,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { DragDropUpload } from '@/components/DragDropUpload';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { useConsentForms, CONSENT_FORM_TYPES } from '@/hooks/useConsentForms';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
