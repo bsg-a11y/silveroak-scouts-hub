@@ -244,7 +244,7 @@ export default function Meetings() {
                           </Button>
                         )}
                         {meeting.mom_url && (
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => { setPreviewMomUrl(meeting.mom_url!); setPreviewMomTitle(`MoM - ${meeting.title}`); }}>
                             <FileText className="h-4 w-4 mr-2" />
                             View MoM
                           </Button>
