@@ -850,6 +850,15 @@ export default function Examinations() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewMaterial}
+          onOpenChange={(open) => { if (!open) setPreviewMaterial(null); }}
+          title={previewMaterial?.title || ''}
+          fileUrl={previewMaterial?.file_url || null}
+          fileType={previewMaterial?.file_url?.split('.').pop() || null}
+        />
       </div>
     </DashboardLayout>
   );
