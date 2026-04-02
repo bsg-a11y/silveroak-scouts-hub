@@ -64,6 +64,8 @@ export default function StudentReports() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActivity, setFilterActivity] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [previewReport, setPreviewReport] = useState<typeof reports[0] | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [uploadForm, setUploadForm] = useState({
     activity_id: '',
