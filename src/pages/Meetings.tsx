@@ -29,6 +29,8 @@ export default function Meetings() {
     location: '',
     agenda: '',
   });
+  const [previewMomUrl, setPreviewMomUrl] = useState<string | null>(null);
+  const [previewMomTitle, setPreviewMomTitle] = useState('');
 
   // Fetch attendees when dialog opens
   useEffect(() => {
