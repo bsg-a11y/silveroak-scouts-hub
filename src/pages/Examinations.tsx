@@ -54,6 +54,7 @@ import { useColleges } from '@/hooks/useColleges';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { format } from 'date-fns';
 import { COLLEGE_DEPARTMENTS, getDepartmentsForCollege } from '@/lib/collegeDepartments';
 import bsgLogo from '@/assets/bsg-logo.png';
