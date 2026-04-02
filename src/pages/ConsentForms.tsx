@@ -33,6 +33,7 @@ import {
   Plus,
   CheckCircle,
   XCircle,
+  Eye,
 } from 'lucide-react';
 import { DragDropUpload } from '@/components/DragDropUpload';
 import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
