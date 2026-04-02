@@ -38,6 +38,7 @@ import {
   Calendar,
   File,
   X,
+  Eye,
 } from 'lucide-react';
 import { useActivityMedia } from '@/hooks/useActivityMedia';
 import { useActivities } from '@/hooks/useActivities';
