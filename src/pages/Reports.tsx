@@ -133,6 +133,12 @@ export default function Reports() {
     }
   };
 
+  const handlePreview = async (report: typeof reports[0]) => {
+    setPreviewReport(report);
+    const signedUrl = await getReportSignedUrl(report.file_url);
+    setPreviewUrl(signedUrl);
+  };
+
   const getFileIcon = (fileType: string | null) => {
     switch (fileType) {
       case 'pdf':
