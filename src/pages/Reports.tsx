@@ -42,6 +42,7 @@ import {
 import { useActivityMedia } from '@/hooks/useActivityMedia';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { format } from 'date-fns';
 
 const REPORT_TYPES = [
