@@ -46,6 +46,7 @@ import {
   Download,
   CheckCircle,
   Clock,
+  Eye,
 } from 'lucide-react';
 import { useExaminations, useExaminationStats } from '@/hooks/useExaminations';
 import { useMembers } from '@/hooks/useMembers';
@@ -53,6 +54,7 @@ import { useColleges } from '@/hooks/useColleges';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { format } from 'date-fns';
 import { COLLEGE_DEPARTMENTS, getDepartmentsForCollege } from '@/lib/collegeDepartments';
 import bsgLogo from '@/assets/bsg-logo.png';
@@ -80,6 +82,7 @@ export default function Examinations() {
     description: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewMaterial, setPreviewMaterial] = useState<typeof materials[0] | null>(null);
 
   // Status update form
   const [statusForm, setStatusForm] = useState({
@@ -369,8 +372,11 @@ export default function Examinations() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon-sm" onClick={() => setPreviewMaterial(material)} title="Preview">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 <Button variant="ghost" size="icon-sm" asChild>
-                                  <a href={material.file_url} target="_blank" rel="noopener noreferrer">
+                                  <a href={material.file_url} target="_blank" rel="noopener noreferrer" title="Download">
                                     <Download className="h-4 w-4" />
                                   </a>
                                 </Button>
@@ -844,6 +850,15 @@ export default function Examinations() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewMaterial}
+          onOpenChange={(open) => { if (!open) setPreviewMaterial(null); }}
+          title={previewMaterial?.title || ''}
+          fileUrl={previewMaterial?.file_url || null}
+          fileType={previewMaterial?.file_url?.split('.').pop() || null}
+        />
       </div>
     </DashboardLayout>
   );

@@ -33,8 +33,10 @@ import {
   Plus,
   CheckCircle,
   XCircle,
+  Eye,
 } from 'lucide-react';
 import { DragDropUpload } from '@/components/DragDropUpload';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { useConsentForms, CONSENT_FORM_TYPES } from '@/hooks/useConsentForms';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -49,6 +51,8 @@ export default function ConsentForms() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [previewForm, setPreviewForm] = useState<typeof forms[0] | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [uploadFormData, setUploadFormData] = useState({
     title: '',
@@ -135,6 +139,12 @@ export default function ConsentForms() {
       a.click();
       document.body.removeChild(a);
     }
+  };
+
+  const handlePreview = async (form: typeof forms[0]) => {
+    setPreviewForm(form);
+    const url = await getDownloadUrl(form.file_url);
+    setPreviewUrl(url);
   };
 
   const openEditDialog = (form: typeof forms[0]) => {
@@ -253,7 +263,16 @@ export default function ConsentForms() {
                             <Button
                               variant="ghost"
                               size="icon-sm"
+                              onClick={() => handlePreview(form)}
+                              title="Preview"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
                               onClick={() => handleDownload(form)}
+                              title="Download"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -444,6 +463,16 @@ export default function ConsentForms() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewForm}
+          onOpenChange={(open) => { if (!open) { setPreviewForm(null); setPreviewUrl(null); } }}
+          title={previewForm?.title || ''}
+          fileUrl={previewUrl}
+          fileType={previewForm?.file_type}
+          onDownload={() => previewForm && handleDownload(previewForm)}
+        />
       </div>
     </DashboardLayout>
   );

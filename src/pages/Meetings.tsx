@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Calendar, MapPin, Clock, FileText, Trash2, Users, Eye } from 'lucide-react';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { format, isPast, isToday } from 'date-fns';
 import { useMeetings, MeetingAttendee } from '@/hooks/useMeetings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,8 @@ export default function Meetings() {
     location: '',
     agenda: '',
   });
+  const [previewMomUrl, setPreviewMomUrl] = useState<string | null>(null);
+  const [previewMomTitle, setPreviewMomTitle] = useState('');
 
   // Fetch attendees when dialog opens
   useEffect(() => {
@@ -241,7 +244,7 @@ export default function Meetings() {
                           </Button>
                         )}
                         {meeting.mom_url && (
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => { setPreviewMomUrl(meeting.mom_url!); setPreviewMomTitle(`MoM - ${meeting.title}`); }}>
                             <FileText className="h-4 w-4 mr-2" />
                             View MoM
                           </Button>
@@ -284,6 +287,15 @@ export default function Meetings() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* MoM Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewMomUrl}
+          onOpenChange={(open) => { if (!open) setPreviewMomUrl(null); }}
+          title={previewMomTitle}
+          fileUrl={previewMomUrl}
+          fileType={previewMomUrl?.split('.').pop() || null}
+        />
       </div>
     </DashboardLayout>
   );

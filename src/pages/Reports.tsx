@@ -38,10 +38,12 @@ import {
   Calendar,
   File,
   X,
+  Eye,
 } from 'lucide-react';
 import { useActivityMedia } from '@/hooks/useActivityMedia';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { format } from 'date-fns';
 
 const REPORT_TYPES = [
@@ -66,6 +68,8 @@ export default function Reports() {
     report_type: 'report' as 'report' | 'summary' | 'documentation',
   });
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewReport, setPreviewReport] = useState<typeof reports[0] | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Filter reports
   const filteredReports = useMemo(() => {
@@ -128,6 +132,12 @@ export default function Reports() {
     if (signedUrl) {
       window.open(signedUrl, '_blank');
     }
+  };
+
+  const handlePreview = async (report: typeof reports[0]) => {
+    setPreviewReport(report);
+    const signedUrl = await getReportSignedUrl(report.file_url);
+    setPreviewUrl(signedUrl);
   };
 
   const getFileIcon = (fileType: string | null) => {
@@ -254,6 +264,14 @@ export default function Reports() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handlePreview(report)}
+                            title="Preview"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -400,6 +418,16 @@ export default function Reports() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewReport}
+          onOpenChange={(open) => { if (!open) { setPreviewReport(null); setPreviewUrl(null); } }}
+          title={previewReport?.title || ''}
+          fileUrl={previewUrl}
+          fileType={previewReport?.file_type}
+          onDownload={() => previewReport && handleDownload(previewReport)}
+        />
       </div>
     </DashboardLayout>
   );

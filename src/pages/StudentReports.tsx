@@ -44,6 +44,7 @@ import {
   Users,
 } from 'lucide-react';
 import { DragDropUpload } from '@/components/DragDropUpload';
+import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 import { useStudentReports } from '@/hooks/useStudentReports';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +64,8 @@ export default function StudentReports() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActivity, setFilterActivity] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [previewReport, setPreviewReport] = useState<typeof reports[0] | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [uploadForm, setUploadForm] = useState({
     activity_id: '',
@@ -130,6 +133,12 @@ export default function StudentReports() {
       a.click();
       document.body.removeChild(a);
     }
+  };
+
+  const handlePreview = async (report: typeof reports[0]) => {
+    setPreviewReport(report);
+    const url = await getReportDownloadUrl(report.file_url);
+    setPreviewUrl(url);
   };
 
   const getStatusBadge = (status: string) => {
@@ -217,6 +226,14 @@ export default function StudentReports() {
                           <TableCell>{getStatusBadge(report.status)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handlePreview(report)}
+                                title="Preview"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
@@ -323,6 +340,14 @@ export default function StudentReports() {
                             <TableCell>{getStatusBadge(report.status)}</TableCell>
                             <TableCell>
                               <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => handlePreview(report)}
+                                  title="Preview"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon-sm"
@@ -487,6 +512,16 @@ export default function StudentReports() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <DocumentPreviewDialog
+          open={!!previewReport}
+          onOpenChange={(open) => { if (!open) { setPreviewReport(null); setPreviewUrl(null); } }}
+          title={previewReport?.title || ''}
+          fileUrl={previewUrl}
+          fileType={previewReport?.file_type}
+          onDownload={() => previewReport && handleDownload(previewReport.file_url, previewReport.title)}
+        />
       </div>
     </DashboardLayout>
   );
