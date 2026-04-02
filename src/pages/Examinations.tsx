@@ -372,8 +372,11 @@ export default function Examinations() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon-sm" onClick={() => setPreviewMaterial(material)} title="Preview">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 <Button variant="ghost" size="icon-sm" asChild>
-                                  <a href={material.file_url} target="_blank" rel="noopener noreferrer">
+                                  <a href={material.file_url} target="_blank" rel="noopener noreferrer" title="Download">
                                     <Download className="h-4 w-4" />
                                   </a>
                                 </Button>
