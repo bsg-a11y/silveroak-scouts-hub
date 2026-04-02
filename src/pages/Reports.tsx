@@ -67,6 +67,8 @@ export default function Reports() {
     report_type: 'report' as 'report' | 'summary' | 'documentation',
   });
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewReport, setPreviewReport] = useState<typeof reports[0] | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Filter reports
   const filteredReports = useMemo(() => {
