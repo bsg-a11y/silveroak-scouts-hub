@@ -691,6 +691,19 @@ export default function Attendance() {
                     </CardContent>
                   </Card>
                 )}
+
+                {selectedMeeting && (
+                  <ExternalParticipantsManager
+                    meetingId={selectedMeeting}
+                    eventName={getSelectedMeetingName()}
+                    eventType="meeting"
+                    memberAttendance={attendance.map(a => ({
+                      name: `${a.profile?.first_name || ''} ${a.profile?.last_name || ''}`,
+                      uid: a.profile?.uid || '-',
+                      status: a.status,
+                    }))}
+                  />
+                )}
               </TabsContent>
             </>
           )}
