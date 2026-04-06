@@ -585,6 +585,19 @@ export default function Attendance() {
                     </CardContent>
                   </Card>
                 )}
+
+                {selectedActivity && (
+                  <ExternalParticipantsManager
+                    activityId={selectedActivity}
+                    eventName={getSelectedActivityName()}
+                    eventType="activity"
+                    memberAttendance={attendance.map(a => ({
+                      name: `${a.profile?.first_name || ''} ${a.profile?.last_name || ''}`,
+                      uid: a.profile?.uid || '-',
+                      status: a.status,
+                    }))}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="meetings" className="space-y-4">
