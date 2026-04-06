@@ -452,7 +452,7 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
         open={!!previewUrl}
         onOpenChange={(open) => { if (!open) setPreviewUrl(null); }}
         fileUrl={previewUrl || ''}
-        fileName={previewTitle}
+        title={previewTitle}
       />
     </div>
   );
