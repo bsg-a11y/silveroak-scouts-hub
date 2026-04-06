@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ExternalParticipantsManager } from '@/components/ExternalParticipantsManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -584,6 +585,19 @@ export default function Attendance() {
                     </CardContent>
                   </Card>
                 )}
+
+                {selectedActivity && (
+                  <ExternalParticipantsManager
+                    activityId={selectedActivity}
+                    eventName={getSelectedActivityName()}
+                    eventType="activity"
+                    memberAttendance={attendance.map(a => ({
+                      name: `${a.profile?.first_name || ''} ${a.profile?.last_name || ''}`,
+                      uid: a.profile?.uid || '-',
+                      status: a.status,
+                    }))}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="meetings" className="space-y-4">
@@ -676,6 +690,19 @@ export default function Attendance() {
                       </div>
                     </CardContent>
                   </Card>
+                )}
+
+                {selectedMeeting && (
+                  <ExternalParticipantsManager
+                    meetingId={selectedMeeting}
+                    eventName={getSelectedMeetingName()}
+                    eventType="meeting"
+                    memberAttendance={attendance.map(a => ({
+                      name: `${a.profile?.first_name || ''} ${a.profile?.last_name || ''}`,
+                      uid: a.profile?.uid || '-',
+                      status: a.status,
+                    }))}
+                  />
                 )}
               </TabsContent>
             </>
