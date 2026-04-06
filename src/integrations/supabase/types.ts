@@ -816,6 +816,63 @@ export type Database = {
         }
         Relationships: []
       }
+      external_participants: {
+        Row: {
+          activity_id: string | null
+          added_by: string | null
+          college_name: string | null
+          created_at: string
+          department: string | null
+          enrollment_number: string | null
+          id: string
+          meeting_id: string | null
+          name: string
+          pdf_url: string | null
+          semester: number | null
+        }
+        Insert: {
+          activity_id?: string | null
+          added_by?: string | null
+          college_name?: string | null
+          created_at?: string
+          department?: string | null
+          enrollment_number?: string | null
+          id?: string
+          meeting_id?: string | null
+          name: string
+          pdf_url?: string | null
+          semester?: number | null
+        }
+        Update: {
+          activity_id?: string | null
+          added_by?: string | null
+          college_name?: string | null
+          created_at?: string
+          department?: string | null
+          enrollment_number?: string | null
+          id?: string
+          meeting_id?: string | null
+          name?: string
+          pdf_url?: string | null
+          semester?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_participants_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_submissions: {
         Row: {
           admin_comment: string | null
