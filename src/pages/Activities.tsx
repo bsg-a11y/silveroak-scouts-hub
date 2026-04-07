@@ -403,6 +403,9 @@ export default function Activities() {
                         <div className="flex items-center gap-2">
                           <Users className="h-3.5 w-3.5" />
                           {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''} registered
+                          {(externalCounts[activity.id] || 0) > 0 && (
+                            <span className="text-xs text-purple-600">+ {externalCounts[activity.id]} non-BSG</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
