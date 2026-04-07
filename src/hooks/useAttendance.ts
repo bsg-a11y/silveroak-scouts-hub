@@ -40,7 +40,7 @@ export function useAttendance(activityId?: string, meetingId?: string) {
       const userIds = [...new Set(data.map(r => r.user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, first_name, last_name, uid')
+        .select('user_id, first_name, last_name, uid, college_name, academic_department, current_semester, enrollment_number')
         .in('user_id', userIds);
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
