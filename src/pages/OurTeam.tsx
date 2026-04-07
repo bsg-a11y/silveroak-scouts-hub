@@ -32,7 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export default function OurTeam() {
-  const { departments, positions, isLoading, addPosition, removePosition, addDepartment, fetchData } = useCommittee();
+  const { departments, positions, isLoading, addPosition, removePosition, addDepartment, deleteDepartment, fetchData } = useCommittee();
   const { members } = useMembers();
   const { isAdminOrCoordinator } = useAuth();
   const { toast } = useToast();
@@ -185,6 +185,17 @@ export default function OurTeam() {
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
               {dept.name}
+              {isAdminOrCoordinator && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-destructive ml-2"
+                  onClick={() => deleteDepartment(dept.id)}
+                  title="Delete department"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </h3>
             {deptMembers.length === 0 ? (
               <p className="text-sm text-muted-foreground">No members assigned yet</p>

@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { UserPlus, Trash2, Search, Download, FileSpreadsheet, FileText, Upload, ChevronDown, Eye, Users, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Search, Download, FileSpreadsheet, FileText, Upload, ChevronDown, Eye, Users, Loader2, Pencil } from 'lucide-react';
 import { useExternalParticipants, ExternalParticipant } from '@/hooks/useExternalParticipants';
 import { COLLEGE_DEPARTMENTS } from '@/lib/collegeDepartments';
 import { format } from 'date-fns';
@@ -30,17 +30,28 @@ import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 const SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 const collegeNames = Object.keys(COLLEGE_DEPARTMENTS);
 
+interface MemberAttendanceDetail {
+  name: string;
+  uid: string;
+  status: string;
+  college_name?: string;
+  academic_department?: string;
+  current_semester?: number;
+  enrollment_number?: string;
+}
+
 interface Props {
   activityId?: string;
   meetingId?: string;
   eventName?: string;
   eventType: 'activity' | 'meeting';
-  memberAttendance?: { name: string; uid: string; status: string }[];
+  memberAttendance?: MemberAttendanceDetail[];
 }
 
 export function ExternalParticipantsManager({ activityId, meetingId, eventName, eventType, memberAttendance = [] }: Props) {
-  const { participants, isLoading, addParticipant, deleteParticipant, uploadPdf } = useExternalParticipants(activityId, meetingId);
+  const { participants, isLoading, addParticipant, updateParticipant, deleteParticipant, uploadPdf } = useExternalParticipants(activityId, meetingId);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<ExternalParticipant | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCollege, setFilterCollege] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'all' | 'members' | 'non-members'>('all');
@@ -122,17 +133,17 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
   // Combined data for export
   const getCombinedData = () => {
     const members = filteredMembers.map(m => ({
-      type: 'Member',
+      type: 'BSG Member',
       name: m.name,
       id: m.uid,
-      college: '-',
-      department: '-',
-      semester: '-',
-      enrollment: '-',
+      college: m.college_name || '-',
+      department: m.academic_department || '-',
+      semester: m.current_semester?.toString() || '-',
+      enrollment: m.enrollment_number || m.uid,
       status: m.status,
     }));
     const nonMembers = filteredNonMembers.map(p => ({
-      type: 'Non-Member',
+      type: 'Non-BSG',
       name: p.name,
       id: '-',
       college: p.college_name || '-',
@@ -144,6 +155,33 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
     if (viewMode === 'members') return members;
     if (viewMode === 'non-members') return nonMembers;
     return [...members, ...nonMembers];
+  };
+
+  const handleEdit = (participant: ExternalParticipant) => {
+    setEditingParticipant(participant);
+    setFormName(participant.name);
+    setFormEnrollment(participant.enrollment_number || '');
+    setFormCollege(participant.college_name || '');
+    setFormDepartment(participant.department || '');
+    setFormSemester(participant.semester?.toString() || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingParticipant || !formName.trim()) return;
+    await updateParticipant.mutateAsync({
+      id: editingParticipant.id,
+      name: formName,
+      enrollment_number: formEnrollment || undefined,
+      college_name: formCollege || undefined,
+      department: formDepartment || undefined,
+      semester: formSemester ? parseInt(formSemester) : undefined,
+    });
+    setEditingParticipant(null);
+    setFormName('');
+    setFormEnrollment('');
+    setFormCollege('');
+    setFormDepartment('');
+    setFormSemester('');
   };
 
   const exportExcel = () => {
@@ -346,12 +384,12 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
                   {viewMode !== 'non-members' && filteredMembers.map((m, i) => (
                     <TableRow key={`m-${i}`}>
                       <TableCell>{i + 1}</TableCell>
-                      <TableCell><Badge variant="success" className="text-xs">Member</Badge></TableCell>
+                      <TableCell><Badge variant="success" className="text-xs">BSG</Badge></TableCell>
                       <TableCell className="font-medium">{m.name}</TableCell>
                       <TableCell>{m.uid}</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>-</TableCell>
+                      <TableCell className="text-xs">{m.college_name || '-'}</TableCell>
+                      <TableCell className="text-xs">{m.academic_department || '-'}</TableCell>
+                      <TableCell>{m.current_semester || '-'}</TableCell>
                       <TableCell>
                         <Badge variant={m.status === 'present' ? 'success' : 'danger'}>{m.status}</Badge>
                       </TableCell>
@@ -361,7 +399,7 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
                   {viewMode !== 'members' && filteredNonMembers.map((p, i) => (
                     <TableRow key={p.id}>
                       <TableCell>{(viewMode !== 'non-members' ? filteredMembers.length : 0) + i + 1}</TableCell>
-                      <TableCell><Badge className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-100">Non-Member</Badge></TableCell>
+                      <TableCell><Badge className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-100">Non-BSG</Badge></TableCell>
                       <TableCell className="font-medium">{p.name}</TableCell>
                       <TableCell>{p.enrollment_number || '-'}</TableCell>
                       <TableCell className="text-xs">{p.college_name || '-'}</TableCell>
@@ -369,9 +407,14 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
                       <TableCell>{p.semester || '-'}</TableCell>
                       <TableCell><Badge variant="success">present</Badge></TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParticipant.mutate(p.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(p)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParticipant.mutate(p.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -442,6 +485,67 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
             <Button onClick={handleAdd} disabled={!formName.trim() || addParticipant.isPending}>
               {addParticipant.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
               Add Participant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Participant Dialog */}
+      <Dialog open={!!editingParticipant} onOpenChange={(open) => {
+        if (!open) {
+          setEditingParticipant(null);
+          setFormName(''); setFormEnrollment(''); setFormCollege(''); setFormDepartment(''); setFormSemester('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit External Participant</DialogTitle>
+            <DialogDescription>Update participant details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Name *</Label>
+              <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Full name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Enrollment Number</Label>
+              <Input value={formEnrollment} onChange={e => setFormEnrollment(e.target.value)} placeholder="e.g. 2024SOCE001" />
+            </div>
+            <div className="space-y-2">
+              <Label>College</Label>
+              <Select value={formCollege} onValueChange={(v) => { setFormCollege(v); setFormDepartment(''); }}>
+                <SelectTrigger><SelectValue placeholder="Select college" /></SelectTrigger>
+                <SelectContent>
+                  {collegeNames.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {departments.length > 0 && (
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Select value={formDepartment} onValueChange={setFormDepartment}>
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>
+                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Semester</Label>
+              <Select value={formSemester} onValueChange={setFormSemester}>
+                <SelectTrigger><SelectValue placeholder="Select semester" /></SelectTrigger>
+                <SelectContent>
+                  {SEMESTERS.map(s => <SelectItem key={s} value={s}>Semester {s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingParticipant(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={!formName.trim() || updateParticipant.isPending}>
+              {updateParticipant.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

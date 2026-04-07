@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { supabase } from '@/integrations/supabase/client';
 import { ActivityForm } from '@/components/ActivityForm';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,28 @@ export default function Activities() {
   const { createRequest } = useCertificateRequests();
   const [certRequestDialog, setCertRequestDialog] = useState<{ activityId: string; activityName: string } | null>(null);
   const [certRequestReason, setCertRequestReason] = useState('');
+  const [externalCounts, setExternalCounts] = useState<Record<string, number>>({});
+
+  // Fetch external participant counts
+  useEffect(() => {
+    const fetchExternalCounts = async () => {
+      const { data } = await supabase
+        .from('external_participants')
+        .select('activity_id')
+        .not('activity_id', 'is', null)
+        .is('pdf_url', null);
+      if (data) {
+        const counts: Record<string, number> = {};
+        data.forEach(row => {
+          if (row.activity_id) {
+            counts[row.activity_id] = (counts[row.activity_id] || 0) + 1;
+          }
+        });
+        setExternalCounts(counts);
+      }
+    };
+    fetchExternalCounts();
+  }, [activities]);
 
   // Fetch registered members when dialog opens
   useEffect(() => {
@@ -380,6 +403,9 @@ export default function Activities() {
                         <div className="flex items-center gap-2">
                           <Users className="h-3.5 w-3.5" />
                           {activity.registered_count || 0}{activity.capacity ? `/${activity.capacity}` : ''} registered
+                          {(externalCounts[activity.id] || 0) > 0 && (
+                            <span className="text-xs text-purple-600">+ {externalCounts[activity.id]} non-BSG</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
@@ -488,6 +514,9 @@ export default function Activities() {
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
                         {activity.registered_count || 0} registered
+                        {(externalCounts[activity.id] || 0) > 0 && (
+                          <span className="text-xs text-purple-600 ml-1">+ {externalCounts[activity.id]} non-BSG</span>
+                        )}
                       </div>
                     </div>
                     {user && activity.status === 'upcoming' && (
@@ -786,6 +815,9 @@ export default function Activities() {
                             <div className="flex items-center gap-1.5">
                               <Users className="h-4 w-4" />
                               {activity.registered_count || 0} attended
+                              {(externalCounts[activity.id] || 0) > 0 && (
+                                <span className="text-xs text-purple-600 ml-1">+ {externalCounts[activity.id]} non-BSG</span>
+                              )}
                             </div>
                           </div>
                           <div className="flex gap-2">

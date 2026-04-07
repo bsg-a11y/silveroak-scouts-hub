@@ -195,6 +195,36 @@ export function useCommittee() {
     }
   };
 
+  const deleteDepartment = async (id: string) => {
+    try {
+      // First remove all positions in this department
+      const { error: posError } = await supabase
+        .from('committee_positions')
+        .delete()
+        .eq('department_id', id);
+
+      if (posError) throw posError;
+
+      const { error } = await supabase
+        .from('committee_departments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({ title: 'Department deleted successfully' });
+      await fetchData();
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting department',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return { success: false };
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -208,5 +238,6 @@ export function useCommittee() {
     updatePosition,
     removePosition,
     addDepartment,
+    deleteDepartment,
   };
 }
