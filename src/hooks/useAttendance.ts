@@ -14,6 +14,10 @@ export interface AttendanceRecord {
     first_name: string;
     last_name: string;
     uid: string;
+    college_name?: string;
+    academic_department?: string;
+    current_semester?: number;
+    enrollment_number?: string;
   };
 }
 
