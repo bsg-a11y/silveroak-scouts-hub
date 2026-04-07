@@ -60,6 +60,27 @@ export function useExternalParticipants(activityId?: string, meetingId?: string)
     },
   });
 
+  const updateParticipant = useMutation({
+    mutationFn: async ({ id, ...data }: {
+      id: string;
+      name?: string;
+      enrollment_number?: string;
+      college_name?: string;
+      department?: string;
+      semester?: number;
+    }) => {
+      const { error } = await supabase.from('external_participants').update(data).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['external-participants'] });
+      toast({ title: 'Success', description: 'Participant updated' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const deleteParticipant = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('external_participants').delete().eq('id', id);
