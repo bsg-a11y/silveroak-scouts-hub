@@ -32,7 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export default function OurTeam() {
-  const { departments, positions, isLoading, addPosition, removePosition, addDepartment, fetchData } = useCommittee();
+  const { departments, positions, isLoading, addPosition, removePosition, addDepartment, deleteDepartment, fetchData } = useCommittee();
   const { members } = useMembers();
   const { isAdminOrCoordinator } = useAuth();
   const { toast } = useToast();
