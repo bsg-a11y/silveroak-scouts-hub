@@ -595,6 +595,10 @@ export default function Attendance() {
                       name: `${a.profile?.first_name || ''} ${a.profile?.last_name || ''}`,
                       uid: a.profile?.uid || '-',
                       status: a.status,
+                      college_name: a.profile?.college_name,
+                      academic_department: a.profile?.academic_department,
+                      current_semester: a.profile?.current_semester,
+                      enrollment_number: a.profile?.enrollment_number,
                     }))}
                   />
                 )}
