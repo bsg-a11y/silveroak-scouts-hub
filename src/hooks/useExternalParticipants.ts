@@ -117,5 +117,5 @@ export function useExternalParticipants(activityId?: string, meetingId?: string)
     return filePath;
   };
 
-  return { participants, isLoading, addParticipant, deleteParticipant, uploadPdf };
+  return { participants, isLoading, addParticipant, updateParticipant, deleteParticipant, uploadPdf };
 }
