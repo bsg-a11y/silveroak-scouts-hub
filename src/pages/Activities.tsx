@@ -81,6 +81,28 @@ export default function Activities() {
   const { createRequest } = useCertificateRequests();
   const [certRequestDialog, setCertRequestDialog] = useState<{ activityId: string; activityName: string } | null>(null);
   const [certRequestReason, setCertRequestReason] = useState('');
+  const [externalCounts, setExternalCounts] = useState<Record<string, number>>({});
+
+  // Fetch external participant counts
+  useEffect(() => {
+    const fetchExternalCounts = async () => {
+      const { data } = await supabase
+        .from('external_participants')
+        .select('activity_id')
+        .not('activity_id', 'is', null)
+        .is('pdf_url', null);
+      if (data) {
+        const counts: Record<string, number> = {};
+        data.forEach(row => {
+          if (row.activity_id) {
+            counts[row.activity_id] = (counts[row.activity_id] || 0) + 1;
+          }
+        });
+        setExternalCounts(counts);
+      }
+    };
+    fetchExternalCounts();
+  }, [activities]);
 
   // Fetch registered members when dialog opens
   useEffect(() => {
