@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { UserPlus, Trash2, Search, Download, FileSpreadsheet, FileText, Upload, ChevronDown, Eye, Users, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Search, Download, FileSpreadsheet, FileText, Upload, ChevronDown, Eye, Users, Loader2, Pencil } from 'lucide-react';
 import { useExternalParticipants, ExternalParticipant } from '@/hooks/useExternalParticipants';
 import { COLLEGE_DEPARTMENTS } from '@/lib/collegeDepartments';
 import { format } from 'date-fns';
