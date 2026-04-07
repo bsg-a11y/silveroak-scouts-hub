@@ -30,12 +30,22 @@ import { DocumentPreviewDialog } from '@/components/DocumentPreviewDialog';
 const SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 const collegeNames = Object.keys(COLLEGE_DEPARTMENTS);
 
+interface MemberAttendanceDetail {
+  name: string;
+  uid: string;
+  status: string;
+  college_name?: string;
+  academic_department?: string;
+  current_semester?: number;
+  enrollment_number?: string;
+}
+
 interface Props {
   activityId?: string;
   meetingId?: string;
   eventName?: string;
   eventType: 'activity' | 'meeting';
-  memberAttendance?: { name: string; uid: string; status: string }[];
+  memberAttendance?: MemberAttendanceDetail[];
 }
 
 export function ExternalParticipantsManager({ activityId, meetingId, eventName, eventType, memberAttendance = [] }: Props) {
