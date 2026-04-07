@@ -815,6 +815,9 @@ export default function Activities() {
                             <div className="flex items-center gap-1.5">
                               <Users className="h-4 w-4" />
                               {activity.registered_count || 0} attended
+                              {(externalCounts[activity.id] || 0) > 0 && (
+                                <span className="text-xs text-purple-600 ml-1">+ {externalCounts[activity.id]} non-BSG</span>
+                              )}
                             </div>
                           </div>
                           <div className="flex gap-2">
