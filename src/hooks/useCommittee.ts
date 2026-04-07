@@ -238,5 +238,6 @@ export function useCommittee() {
     updatePosition,
     removePosition,
     addDepartment,
+    deleteDepartment,
   };
 }
