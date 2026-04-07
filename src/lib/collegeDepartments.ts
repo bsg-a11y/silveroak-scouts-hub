@@ -11,6 +11,7 @@ export const COLLEGE_DEPARTMENTS: Record<string, string[]> = {
     'Civil Engineering',
     'Mechanical Engineering',
     'Aeronautical Engineering',
+    'Chemical Engineering',
   ],
   'Aditya Silver Oak Institute of Technology': [
     'C.E (Computer Engineering)',
@@ -22,6 +23,7 @@ export const COLLEGE_DEPARTMENTS: Record<string, string[]> = {
     'Civil Engineering',
     'Mechanical Engineering',
     'Aeronautical Engineering',
+    'Chemical Engineering',
     'Diploma C.E (Computer Engineering)',
     'Diploma C.S.E (Computer Science & Engineering)',
     'Diploma C.S.E AIML (Artificial Intelligence & Machine Learning)',
@@ -31,6 +33,7 @@ export const COLLEGE_DEPARTMENTS: Record<string, string[]> = {
     'Diploma Civil Engineering',
     'Diploma Mechanical Engineering',
     'Diploma Aeronautical Engineering',
+    'Diploma Chemical Engineering',
   ],
   'Silver Oak College of Humanities & Social Sciences': [
     'BA English',
