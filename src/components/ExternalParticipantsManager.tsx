@@ -384,12 +384,12 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
                   {viewMode !== 'non-members' && filteredMembers.map((m, i) => (
                     <TableRow key={`m-${i}`}>
                       <TableCell>{i + 1}</TableCell>
-                      <TableCell><Badge variant="success" className="text-xs">Member</Badge></TableCell>
+                      <TableCell><Badge variant="success" className="text-xs">BSG</Badge></TableCell>
                       <TableCell className="font-medium">{m.name}</TableCell>
                       <TableCell>{m.uid}</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>-</TableCell>
+                      <TableCell className="text-xs">{m.college_name || '-'}</TableCell>
+                      <TableCell className="text-xs">{m.academic_department || '-'}</TableCell>
+                      <TableCell>{m.current_semester || '-'}</TableCell>
                       <TableCell>
                         <Badge variant={m.status === 'present' ? 'success' : 'danger'}>{m.status}</Badge>
                       </TableCell>
@@ -399,7 +399,7 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
                   {viewMode !== 'members' && filteredNonMembers.map((p, i) => (
                     <TableRow key={p.id}>
                       <TableCell>{(viewMode !== 'non-members' ? filteredMembers.length : 0) + i + 1}</TableCell>
-                      <TableCell><Badge className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-100">Non-Member</Badge></TableCell>
+                      <TableCell><Badge className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-100">Non-BSG</Badge></TableCell>
                       <TableCell className="font-medium">{p.name}</TableCell>
                       <TableCell>{p.enrollment_number || '-'}</TableCell>
                       <TableCell className="text-xs">{p.college_name || '-'}</TableCell>
@@ -407,9 +407,14 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
                       <TableCell>{p.semester || '-'}</TableCell>
                       <TableCell><Badge variant="success">present</Badge></TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParticipant.mutate(p.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(p)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParticipant.mutate(p.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
