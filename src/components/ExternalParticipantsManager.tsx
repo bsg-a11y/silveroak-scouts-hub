@@ -133,17 +133,17 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
   // Combined data for export
   const getCombinedData = () => {
     const members = filteredMembers.map(m => ({
-      type: 'Member',
+      type: 'BSG Member',
       name: m.name,
       id: m.uid,
-      college: '-',
-      department: '-',
-      semester: '-',
-      enrollment: '-',
+      college: m.college_name || '-',
+      department: m.academic_department || '-',
+      semester: m.current_semester?.toString() || '-',
+      enrollment: m.enrollment_number || m.uid,
       status: m.status,
     }));
     const nonMembers = filteredNonMembers.map(p => ({
-      type: 'Non-Member',
+      type: 'Non-BSG',
       name: p.name,
       id: '-',
       college: p.college_name || '-',
@@ -155,6 +155,33 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
     if (viewMode === 'members') return members;
     if (viewMode === 'non-members') return nonMembers;
     return [...members, ...nonMembers];
+  };
+
+  const handleEdit = (participant: ExternalParticipant) => {
+    setEditingParticipant(participant);
+    setFormName(participant.name);
+    setFormEnrollment(participant.enrollment_number || '');
+    setFormCollege(participant.college_name || '');
+    setFormDepartment(participant.department || '');
+    setFormSemester(participant.semester?.toString() || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingParticipant || !formName.trim()) return;
+    await updateParticipant.mutateAsync({
+      id: editingParticipant.id,
+      name: formName,
+      enrollment_number: formEnrollment || undefined,
+      college_name: formCollege || undefined,
+      department: formDepartment || undefined,
+      semester: formSemester ? parseInt(formSemester) : undefined,
+    });
+    setEditingParticipant(null);
+    setFormName('');
+    setFormEnrollment('');
+    setFormCollege('');
+    setFormDepartment('');
+    setFormSemester('');
   };
 
   const exportExcel = () => {
