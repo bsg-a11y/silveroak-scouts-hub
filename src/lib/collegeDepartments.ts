@@ -11,6 +11,7 @@ export const COLLEGE_DEPARTMENTS: Record<string, string[]> = {
     'Civil Engineering',
     'Mechanical Engineering',
     'Aeronautical Engineering',
+    'Chemical Engineering',
   ],
   'Aditya Silver Oak Institute of Technology': [
     'C.E (Computer Engineering)',
