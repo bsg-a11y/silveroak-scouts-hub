@@ -49,8 +49,9 @@ interface Props {
 }
 
 export function ExternalParticipantsManager({ activityId, meetingId, eventName, eventType, memberAttendance = [] }: Props) {
-  const { participants, isLoading, addParticipant, deleteParticipant, uploadPdf } = useExternalParticipants(activityId, meetingId);
+  const { participants, isLoading, addParticipant, updateParticipant, deleteParticipant, uploadPdf } = useExternalParticipants(activityId, meetingId);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<ExternalParticipant | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCollege, setFilterCollege] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'all' | 'members' | 'non-members'>('all');
