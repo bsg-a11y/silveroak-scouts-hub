@@ -490,6 +490,67 @@ export function ExternalParticipantsManager({ activityId, meetingId, eventName, 
         </DialogContent>
       </Dialog>
 
+      {/* Edit Participant Dialog */}
+      <Dialog open={!!editingParticipant} onOpenChange={(open) => {
+        if (!open) {
+          setEditingParticipant(null);
+          setFormName(''); setFormEnrollment(''); setFormCollege(''); setFormDepartment(''); setFormSemester('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit External Participant</DialogTitle>
+            <DialogDescription>Update participant details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Name *</Label>
+              <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Full name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Enrollment Number</Label>
+              <Input value={formEnrollment} onChange={e => setFormEnrollment(e.target.value)} placeholder="e.g. 2024SOCE001" />
+            </div>
+            <div className="space-y-2">
+              <Label>College</Label>
+              <Select value={formCollege} onValueChange={(v) => { setFormCollege(v); setFormDepartment(''); }}>
+                <SelectTrigger><SelectValue placeholder="Select college" /></SelectTrigger>
+                <SelectContent>
+                  {collegeNames.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {departments.length > 0 && (
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Select value={formDepartment} onValueChange={setFormDepartment}>
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>
+                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Semester</Label>
+              <Select value={formSemester} onValueChange={setFormSemester}>
+                <SelectTrigger><SelectValue placeholder="Select semester" /></SelectTrigger>
+                <SelectContent>
+                  {SEMESTERS.map(s => <SelectItem key={s} value={s}>Semester {s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingParticipant(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={!formName.trim() || updateParticipant.isPending}>
+              {updateParticipant.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* PDF Preview */}
       <DocumentPreviewDialog
         open={!!previewUrl}
