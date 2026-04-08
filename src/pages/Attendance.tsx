@@ -410,7 +410,9 @@ export default function Attendance() {
                       <span className="text-sm text-muted-foreground">Meeting Attendance</span>
                       <span className="text-2xl font-bold text-accent">{myMeetingPercentage}%</span>
                     </div>
-                    <Progress value={myMeetingPercentage} className="h-2" />
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${myMeetingPercentage}%` }} />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       {myMeetingPresent} of {totalMeetings} meetings
                     </p>
