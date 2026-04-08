@@ -76,7 +76,8 @@ export default function Forms() {
   const { applications, myApplications, isLoading: isLoadingApps, createApplication, reviewApplication, deleteApplication } = useCommitteeApplications();
   const { forms, submissions, mySubmissions, isLoading: isLoadingForms, createForm, updateForm, deleteForm, submitForm, reviewSubmission, deleteSubmission } = useCustomForms();
   const { departments } = useCommittee();
-   const { settings: appTypeSettings, isLoading: isLoadingSettings, toggleSetting, isTypeActive } = useApplicationTypeSettings();
+  const { members } = useMembers();
+  const { settings: appTypeSettings, isLoading: isLoadingSettings, toggleSetting, isTypeActive } = useApplicationTypeSettings();
 
   const [activeTab, setActiveTab] = useState('apply');
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
