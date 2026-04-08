@@ -143,6 +143,8 @@ export function useCustomForms() {
     description?: string;
     form_type: string;
     fields: FormField[];
+    visibility_type?: string;
+    assigned_member_ids?: string[];
   }) => {
     const { error } = await supabase
       .from('custom_forms')
@@ -152,6 +154,8 @@ export function useCustomForms() {
         form_type: formData.form_type,
         fields: formData.fields as any,
         created_by: user?.id,
+        visibility_type: formData.visibility_type || 'everyone',
+        assigned_member_ids: formData.assigned_member_ids || [],
       });
 
     if (error) {
