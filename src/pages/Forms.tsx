@@ -972,6 +972,50 @@ export default function Forms() {
                 <Label>Active (visible to members)</Label>
               </div>
 
+              {/* Visibility Controls */}
+              <div className="space-y-2">
+                <Label>Form Visibility</Label>
+                <Select value={editFormData.visibility_type} onValueChange={(v) => setEditFormData(prev => ({ ...prev, visibility_type: v, assigned_member_ids: v === 'everyone' ? [] : prev.assigned_member_ids }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Open for Everyone</SelectItem>
+                    <SelectItem value="selected_members">Selected Members Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editFormData.visibility_type === 'selected_members' && (
+                <div className="space-y-2 border rounded-lg p-3">
+                  <Label>Select Members ({editFormData.assigned_member_ids.length} selected)</Label>
+                  <Input placeholder="Search members..." onChange={(e) => setMemberSearchQuery(e.target.value)} />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {members
+                      .filter(m => {
+                        if (!memberSearchQuery) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        return m.first_name.toLowerCase().includes(q) || m.last_name.toLowerCase().includes(q) || m.uid.toLowerCase().includes(q);
+                      })
+                      .map(m => (
+                        <div key={m.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50">
+                          <Checkbox
+                            checked={editFormData.assigned_member_ids.includes(m.user_id)}
+                            onCheckedChange={(checked) => {
+                              setEditFormData(prev => ({
+                                ...prev,
+                                assigned_member_ids: checked
+                                  ? [...prev.assigned_member_ids, m.user_id]
+                                  : prev.assigned_member_ids.filter(id => id !== m.user_id)
+                              }));
+                            }}
+                          />
+                          <span className="text-sm">{m.first_name} {m.last_name}</span>
+                          <span className="text-xs text-muted-foreground">({m.uid})</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               {/* Existing Fields */}
               <div className="space-y-2">
                 <Label>Current Fields ({editFormData.fields.length})</Label>
