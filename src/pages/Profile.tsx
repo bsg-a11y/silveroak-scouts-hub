@@ -17,7 +17,8 @@ import {
   Award,
   ClipboardCheck,
   FileText,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react';
 import { ROLE_LABELS, type UserRole } from '@/types';
 import { format } from 'date-fns';
@@ -74,9 +75,12 @@ export default function Profile() {
   const { user, profile: authProfile, roles } = useAuth();
   const [fullProfile, setFullProfile] = useState<FullProfile | null>(null);
   const [activityHistory, setActivityHistory] = useState<ActivityHistory[]>([]);
-  const [totalActivitiesRegistered, setTotalActivitiesRegistered] = useState(0);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [totalCompletedActivities, setTotalCompletedActivities] = useState(0);
+  const [totalMeetings, setTotalMeetings] = useState(0);
+  const [meetingHistory, setMeetingHistory] = useState<{ id: string; title: string; meeting_date: string; attended: boolean }[]>([]);
+  const [meetingPresent, setMeetingPresent] = useState(0);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getUserExaminationBadge } = useExaminations();
 
@@ -97,43 +101,78 @@ export default function Profile() {
           setFullProfile(profileData);
         }
 
-        // Fetch total registered activities
-        const { count: totalRegistered } = await supabase
-          .from('activity_registrations')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+        // Fetch total completed activities & meetings
+        const [completedActivitiesRes, meetingsRes] = await Promise.all([
+          supabase.from('activities').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+          supabase.from('meetings').select('*', { count: 'exact', head: true }),
+        ]);
 
-        // Fetch attendance records with activity details
+        const completedActivitiesCount = completedActivitiesRes.count || 0;
+        const meetingsCount = meetingsRes.count || 0;
+        setTotalCompletedActivities(completedActivitiesCount);
+        setTotalMeetings(meetingsCount);
+
+        // Fetch attendance records
         const { data: attendanceData } = await supabase
           .from('attendance')
-          .select(`
-            id,
-            status,
-            activity_id,
-            activities (
-              name,
-              activity_date
-            )
-          `)
+          .select('id, status, activity_id, meeting_id')
           .eq('user_id', user.id)
-          .not('activity_id', 'is', null)
           .order('marked_at', { ascending: false });
 
-        const totalActivitiesRegistered = totalRegistered || 0;
-
         if (attendanceData) {
-          const history = attendanceData
-            .filter(a => a.activities)
-            .map(a => ({
-              id: a.id,
-              name: (a.activities as any)?.name || 'Unknown Activity',
-              activity_date: (a.activities as any)?.activity_date || '',
-              attended: a.status === 'present',
-            }));
-          setActivityHistory(history);
-        }
+          // Deduplicate by activity_id
+          const activityIds = [...new Set(attendanceData.filter(a => a.activity_id).map(a => a.activity_id!))];
+          const meetingIds = [...new Set(attendanceData.filter(a => a.meeting_id).map(a => a.meeting_id!))];
 
-        setTotalActivitiesRegistered(totalActivitiesRegistered);
+          const [activitiesRes, meetingsDataRes] = await Promise.all([
+            activityIds.length > 0 ? supabase.from('activities').select('id, name, activity_date').in('id', activityIds) : { data: [] },
+            meetingIds.length > 0 ? supabase.from('meetings').select('id, title, meeting_date').in('id', meetingIds) : { data: [] },
+          ]);
+
+          const activityMap = new Map<string, any>(activitiesRes.data?.map(a => [a.id, a] as [string, any]) || []);
+          const meetingMap = new Map<string, any>(meetingsDataRes.data?.map(m => [m.id, m] as [string, any]) || []);
+
+          // Deduplicate: one record per activity, prefer 'present'
+          const activitySeen = new Map<string, { id: string; status: string }>();
+          attendanceData.filter(a => a.activity_id).forEach(a => {
+            const existing = activitySeen.get(a.activity_id!);
+            if (!existing || (a.status === 'present' && existing.status !== 'present')) {
+              activitySeen.set(a.activity_id!, a);
+            }
+          });
+
+          const history = Array.from(activitySeen.entries()).map(([actId, record]) => {
+            const act = activityMap.get(actId);
+            return {
+              id: record.id,
+              name: act?.name || 'Unknown Activity',
+              activity_date: act?.activity_date || '',
+              attended: record.status === 'present',
+            };
+          });
+          setActivityHistory(history);
+
+          // Same for meetings
+          const meetingSeen = new Map<string, { id: string; status: string }>();
+          attendanceData.filter(a => a.meeting_id).forEach(a => {
+            const existing = meetingSeen.get(a.meeting_id!);
+            if (!existing || (a.status === 'present' && existing.status !== 'present')) {
+              meetingSeen.set(a.meeting_id!, a);
+            }
+          });
+
+          const mHistory = Array.from(meetingSeen.entries()).map(([mtgId, record]) => {
+            const mtg = meetingMap.get(mtgId);
+            return {
+              id: record.id,
+              title: mtg?.title || 'Unknown Meeting',
+              meeting_date: mtg?.meeting_date || '',
+              attended: record.status === 'present',
+            };
+          });
+          setMeetingHistory(mHistory);
+          setMeetingPresent(mHistory.filter(m => m.attended).length);
+        }
 
         // Fetch certificates
         const { data: certsData } = await supabase
@@ -178,8 +217,16 @@ export default function Profile() {
 
   const fullName = `${fullProfile.first_name} ${fullProfile.middle_name || ''} ${fullProfile.last_name}`.trim();
   const activitiesAttended = activityHistory.filter(a => a.attended).length;
-  const attendancePercentage = totalActivitiesRegistered > 0
-    ? Math.round((activitiesAttended / totalActivitiesRegistered) * 100)
+  const activityPercentage = totalCompletedActivities > 0
+    ? Math.round((activitiesAttended / totalCompletedActivities) * 100)
+    : 0;
+  const meetingPercentage = totalMeetings > 0
+    ? Math.round((meetingPresent / totalMeetings) * 100)
+    : 0;
+  const totalEventsCount = totalCompletedActivities + totalMeetings;
+  const totalAttended = activitiesAttended + meetingPresent;
+  const attendancePercentage = totalEventsCount > 0
+    ? Math.round((totalAttended / totalEventsCount) * 100)
     : 0;
   const userRole = (roles[0] || 'member') as UserRole;
 
@@ -282,8 +329,8 @@ export default function Profile() {
                   <ClipboardCheck className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{attendancePercentage}%</p>
-                  <p className="text-xs text-muted-foreground">Attendance ({activitiesAttended}/{totalActivitiesRegistered})</p>
+                   <p className="text-2xl font-bold font-display">{attendancePercentage}%</p>
+                  <p className="text-xs text-muted-foreground">Overall ({totalAttended}/{totalEventsCount})</p>
                 </div>
               </div>
             </CardContent>
@@ -295,8 +342,21 @@ export default function Profile() {
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{totalActivitiesRegistered}</p>
-                  <p className="text-xs text-muted-foreground">Registered</p>
+                  <p className="text-2xl font-bold font-display">{activitiesAttended}/{totalCompletedActivities}</p>
+                  <p className="text-xs text-muted-foreground">Activities</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card variant="stat">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/10">
+                  <Users className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{meetingPresent}/{totalMeetings}</p>
+                  <p className="text-xs text-muted-foreground">Meetings</p>
                 </div>
               </div>
             </CardContent>

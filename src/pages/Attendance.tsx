@@ -173,9 +173,26 @@ export default function Attendance() {
     }));
   };
 
-  // Calculate my attendance stats - against total completed activities/meetings
-  const myActivityPresent = myAttendance.filter(a => a.activity_id && a.status === 'present').length;
-  const myMeetingPresent = myAttendance.filter(a => a.meeting_id && a.status === 'present').length;
+  // Deduplicate attendance: keep one record per activity/meeting (prefer 'present')
+  const deduplicatedAttendance = useMemo(() => {
+    const seen = new Map<string, EnrichedAttendance>();
+    for (const record of myAttendance) {
+      const key = record.activity_id || record.meeting_id || record.id;
+      const existing = seen.get(key);
+      if (!existing || (record.status === 'present' && existing.status !== 'present')) {
+        seen.set(key, record);
+      }
+    }
+    return Array.from(seen.values());
+  }, [myAttendance]);
+
+  // Calculate my attendance stats - unique activities/meetings attended out of total
+  const myActivityPresent = new Set(
+    deduplicatedAttendance.filter(a => a.activity_id && a.status === 'present').map(a => a.activity_id)
+  ).size;
+  const myMeetingPresent = new Set(
+    deduplicatedAttendance.filter(a => a.meeting_id && a.status === 'present').map(a => a.meeting_id)
+  ).size;
   const myActivityPercentage = totalCompletedActivities > 0
     ? Math.round((myActivityPresent / totalCompletedActivities) * 100) : 0;
   const myMeetingPercentage = totalMeetings > 0
@@ -379,7 +396,9 @@ export default function Attendance() {
                       <span className="text-sm text-muted-foreground">Activity Attendance</span>
                       <span className="text-2xl font-bold text-bsg-green">{myActivityPercentage}%</span>
                     </div>
-                    <Progress value={myActivityPercentage} className="h-2" />
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-bsg-green transition-all duration-500" style={{ width: `${myActivityPercentage}%` }} />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       {myActivityPresent} of {totalCompletedActivities} completed activities
                     </p>
@@ -391,7 +410,9 @@ export default function Attendance() {
                       <span className="text-sm text-muted-foreground">Meeting Attendance</span>
                       <span className="text-2xl font-bold text-accent">{myMeetingPercentage}%</span>
                     </div>
-                    <Progress value={myMeetingPercentage} className="h-2" />
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${myMeetingPercentage}%` }} />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       {myMeetingPresent} of {totalMeetings} meetings
                     </p>
@@ -403,7 +424,9 @@ export default function Attendance() {
                       <span className="text-sm text-muted-foreground">Overall</span>
                       <span className="text-2xl font-bold text-primary">{overallPercentage}%</span>
                     </div>
-                    <Progress value={overallPercentage} className="h-2" />
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-bsg-green transition-all duration-500" style={{ width: `${overallPercentage}%` }} />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       {totalPresent} of {totalEvents} total events
                     </p>
@@ -424,7 +447,7 @@ export default function Attendance() {
                     <p className="text-center text-muted-foreground py-8">No attendance records found</p>
                   ) : (
                     <div className="space-y-2">
-                      {myAttendance.map((record) => (
+                      {deduplicatedAttendance.map((record) => (
                         <div
                           key={record.id}
                           className="flex items-center justify-between p-3 rounded-lg border border-border/50"

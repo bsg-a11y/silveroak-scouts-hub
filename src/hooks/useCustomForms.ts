@@ -19,6 +19,8 @@ export interface CustomForm {
   form_type: string;
   fields: FormField[];
   is_active: boolean;
+  visibility_type: string;
+  assigned_member_ids: string[];
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -64,7 +66,9 @@ export function useCustomForms() {
     // Parse fields from JSON
     const parsedForms = (data || []).map(form => ({
       ...form,
-      fields: Array.isArray(form.fields) ? form.fields : JSON.parse(form.fields as string || '[]')
+      fields: Array.isArray(form.fields) ? form.fields : JSON.parse(form.fields as string || '[]'),
+      assigned_member_ids: form.assigned_member_ids || [],
+      visibility_type: form.visibility_type || 'everyone',
     })) as CustomForm[];
 
     setForms(parsedForms);
@@ -139,6 +143,8 @@ export function useCustomForms() {
     description?: string;
     form_type: string;
     fields: FormField[];
+    visibility_type?: string;
+    assigned_member_ids?: string[];
   }) => {
     const { error } = await supabase
       .from('custom_forms')
@@ -148,6 +154,8 @@ export function useCustomForms() {
         form_type: formData.form_type,
         fields: formData.fields as any,
         created_by: user?.id,
+        visibility_type: formData.visibility_type || 'everyone',
+        assigned_member_ids: formData.assigned_member_ids || [],
       });
 
     if (error) {

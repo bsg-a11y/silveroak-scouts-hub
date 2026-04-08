@@ -49,7 +49,8 @@ import {
 import { useCommitteeApplications, COMMITTEE_SKILLS, CreateApplicationData } from '@/hooks/useCommitteeApplications';
 import { useCustomForms, FormField } from '@/hooks/useCustomForms';
 import { useCommittee } from '@/hooks/useCommittee';
- import { useApplicationTypeSettings } from '@/hooks/useApplicationTypeSettings';
+import { useApplicationTypeSettings } from '@/hooks/useApplicationTypeSettings';
+import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -75,7 +76,8 @@ export default function Forms() {
   const { applications, myApplications, isLoading: isLoadingApps, createApplication, reviewApplication, deleteApplication } = useCommitteeApplications();
   const { forms, submissions, mySubmissions, isLoading: isLoadingForms, createForm, updateForm, deleteForm, submitForm, reviewSubmission, deleteSubmission } = useCustomForms();
   const { departments } = useCommittee();
-   const { settings: appTypeSettings, isLoading: isLoadingSettings, toggleSetting, isTypeActive } = useApplicationTypeSettings();
+  const { members } = useMembers();
+  const { settings: appTypeSettings, isLoading: isLoadingSettings, toggleSetting, isTypeActive } = useApplicationTypeSettings();
 
   const [activeTab, setActiveTab] = useState('apply');
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
@@ -96,6 +98,8 @@ export default function Forms() {
     description: '',
     form_type: 'general',
     fields: [] as FormField[],
+    visibility_type: 'everyone',
+    assigned_member_ids: [] as string[],
   });
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -103,7 +107,10 @@ export default function Forms() {
     form_type: 'general',
     fields: [] as FormField[],
     is_active: true,
+    visibility_type: 'everyone',
+    assigned_member_ids: [] as string[],
   });
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [newField, setNewField] = useState<Partial<FormField>>({
     label: '',
     type: 'text',
@@ -195,7 +202,7 @@ export default function Forms() {
     setIsSubmitting(false);
     if (result.success) {
       setIsCreateFormDialogOpen(false);
-      setNewFormData({ title: '', description: '', form_type: 'general', fields: [] });
+      setNewFormData({ title: '', description: '', form_type: 'general', fields: [], visibility_type: 'everyone', assigned_member_ids: [] });
     }
   };
 
@@ -208,6 +215,8 @@ export default function Forms() {
       form_type: form.form_type,
       fields: [...form.fields],
       is_active: form.is_active,
+      visibility_type: form.visibility_type || 'everyone',
+      assigned_member_ids: form.assigned_member_ids || [],
     });
     setIsEditFormDialogOpen(true);
   };
@@ -275,7 +284,15 @@ export default function Forms() {
   };
 
   const currentSkills = COMMITTEE_SKILLS[formData.application_type] || [];
-  const activeCustomForms = forms.filter(f => f.is_active);
+  const activeCustomForms = forms.filter(f => {
+    if (!f.is_active) return false;
+    if (isAdminOrCoordinator) return true;
+    if (f.visibility_type === 'everyone') return true;
+    if (f.visibility_type === 'selected_members' && user) {
+      return f.assigned_member_ids?.includes(user.id);
+    }
+    return false;
+  });
    const activeApplicationTypes = APPLICATION_TYPES.filter(t => isTypeActive(t.value));
    const isLoading = isLoadingApps || isLoadingForms || isLoadingSettings;
 
@@ -532,6 +549,7 @@ export default function Forms() {
                           <TableHead>Title</TableHead>
                           <TableHead>Fields</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Visibility</TableHead>
                           <TableHead>Created</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -544,6 +562,11 @@ export default function Forms() {
                             <TableCell>
                               <Badge variant={form.is_active ? 'default' : 'secondary'}>
                                 {form.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {form.visibility_type === 'everyone' ? 'Everyone' : `${form.assigned_member_ids?.length || 0} members`}
                               </Badge>
                             </TableCell>
                             <TableCell>{format(new Date(form.created_at), 'MMM d, yyyy')}</TableCell>
@@ -812,6 +835,50 @@ export default function Forms() {
                 <Textarea value={newFormData.description} onChange={(e) => setNewFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe the form purpose..." rows={2} />
               </div>
 
+              {/* Visibility Controls */}
+              <div className="space-y-2">
+                <Label>Form Visibility</Label>
+                <Select value={newFormData.visibility_type} onValueChange={(v) => setNewFormData(prev => ({ ...prev, visibility_type: v, assigned_member_ids: v === 'everyone' ? [] : prev.assigned_member_ids }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Open for Everyone</SelectItem>
+                    <SelectItem value="selected_members">Selected Members Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {newFormData.visibility_type === 'selected_members' && (
+                <div className="space-y-2 border rounded-lg p-3">
+                  <Label>Select Members ({newFormData.assigned_member_ids.length} selected)</Label>
+                  <Input placeholder="Search members..." value={memberSearchQuery} onChange={(e) => setMemberSearchQuery(e.target.value)} />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {members
+                      .filter(m => {
+                        if (!memberSearchQuery) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        return m.first_name.toLowerCase().includes(q) || m.last_name.toLowerCase().includes(q) || m.uid.toLowerCase().includes(q);
+                      })
+                      .map(m => (
+                        <div key={m.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50">
+                          <Checkbox
+                            checked={newFormData.assigned_member_ids.includes(m.user_id)}
+                            onCheckedChange={(checked) => {
+                              setNewFormData(prev => ({
+                                ...prev,
+                                assigned_member_ids: checked
+                                  ? [...prev.assigned_member_ids, m.user_id]
+                                  : prev.assigned_member_ids.filter(id => id !== m.user_id)
+                              }));
+                            }}
+                          />
+                          <span className="text-sm">{m.first_name} {m.last_name}</span>
+                          <span className="text-xs text-muted-foreground">({m.uid})</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               <div className="border rounded-lg p-4 space-y-4">
                 <Label>Add Field</Label>
                 <div className="grid grid-cols-2 gap-4">
@@ -910,6 +977,50 @@ export default function Forms() {
                 <Checkbox checked={editFormData.is_active} onCheckedChange={(c) => setEditFormData(prev => ({ ...prev, is_active: c === true }))} />
                 <Label>Active (visible to members)</Label>
               </div>
+
+              {/* Visibility Controls */}
+              <div className="space-y-2">
+                <Label>Form Visibility</Label>
+                <Select value={editFormData.visibility_type} onValueChange={(v) => setEditFormData(prev => ({ ...prev, visibility_type: v, assigned_member_ids: v === 'everyone' ? [] : prev.assigned_member_ids }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Open for Everyone</SelectItem>
+                    <SelectItem value="selected_members">Selected Members Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editFormData.visibility_type === 'selected_members' && (
+                <div className="space-y-2 border rounded-lg p-3">
+                  <Label>Select Members ({editFormData.assigned_member_ids.length} selected)</Label>
+                  <Input placeholder="Search members..." onChange={(e) => setMemberSearchQuery(e.target.value)} />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {members
+                      .filter(m => {
+                        if (!memberSearchQuery) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        return m.first_name.toLowerCase().includes(q) || m.last_name.toLowerCase().includes(q) || m.uid.toLowerCase().includes(q);
+                      })
+                      .map(m => (
+                        <div key={m.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50">
+                          <Checkbox
+                            checked={editFormData.assigned_member_ids.includes(m.user_id)}
+                            onCheckedChange={(checked) => {
+                              setEditFormData(prev => ({
+                                ...prev,
+                                assigned_member_ids: checked
+                                  ? [...prev.assigned_member_ids, m.user_id]
+                                  : prev.assigned_member_ids.filter(id => id !== m.user_id)
+                              }));
+                            }}
+                          />
+                          <span className="text-sm">{m.first_name} {m.last_name}</span>
+                          <span className="text-xs text-muted-foreground">({m.uid})</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* Existing Fields */}
               <div className="space-y-2">
