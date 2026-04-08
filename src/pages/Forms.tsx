@@ -49,7 +49,8 @@ import {
 import { useCommitteeApplications, COMMITTEE_SKILLS, CreateApplicationData } from '@/hooks/useCommitteeApplications';
 import { useCustomForms, FormField } from '@/hooks/useCustomForms';
 import { useCommittee } from '@/hooks/useCommittee';
- import { useApplicationTypeSettings } from '@/hooks/useApplicationTypeSettings';
+import { useApplicationTypeSettings } from '@/hooks/useApplicationTypeSettings';
+import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
