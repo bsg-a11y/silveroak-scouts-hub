@@ -19,6 +19,8 @@ export interface CustomForm {
   form_type: string;
   fields: FormField[];
   is_active: boolean;
+  visibility_type: string;
+  assigned_member_ids: string[];
   created_by: string | null;
   created_at: string;
   updated_at: string;
