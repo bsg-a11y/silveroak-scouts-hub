@@ -441,7 +441,7 @@ export default function Attendance() {
                     <p className="text-center text-muted-foreground py-8">No attendance records found</p>
                   ) : (
                     <div className="space-y-2">
-                      {myAttendance.map((record) => (
+                      {deduplicatedAttendance.map((record) => (
                         <div
                           key={record.id}
                           className="flex items-center justify-between p-3 rounded-lg border border-border/50"
