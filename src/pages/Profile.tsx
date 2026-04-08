@@ -80,7 +80,7 @@ export default function Profile() {
   const [meetingPresent, setMeetingPresent] = useState(0);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const { getUserExaminationBadge } = useExaminations();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfileData = async () => {
