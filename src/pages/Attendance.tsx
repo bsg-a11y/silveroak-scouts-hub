@@ -424,7 +424,9 @@ export default function Attendance() {
                       <span className="text-sm text-muted-foreground">Overall</span>
                       <span className="text-2xl font-bold text-primary">{overallPercentage}%</span>
                     </div>
-                    <Progress value={overallPercentage} className="h-2" />
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-bsg-green transition-all duration-500" style={{ width: `${overallPercentage}%` }} />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       {totalPresent} of {totalEvents} total events
                     </p>
