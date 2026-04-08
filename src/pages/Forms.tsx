@@ -202,7 +202,7 @@ export default function Forms() {
     setIsSubmitting(false);
     if (result.success) {
       setIsCreateFormDialogOpen(false);
-      setNewFormData({ title: '', description: '', form_type: 'general', fields: [] });
+      setNewFormData({ title: '', description: '', form_type: 'general', fields: [], visibility_type: 'everyone', assigned_member_ids: [] });
     }
   };
 
