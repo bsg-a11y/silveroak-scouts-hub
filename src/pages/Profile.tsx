@@ -100,43 +100,78 @@ export default function Profile() {
           setFullProfile(profileData);
         }
 
-        // Fetch total registered activities
-        const { count: totalRegistered } = await supabase
-          .from('activity_registrations')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+        // Fetch total completed activities & meetings
+        const [completedActivitiesRes, meetingsRes] = await Promise.all([
+          supabase.from('activities').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+          supabase.from('meetings').select('*', { count: 'exact', head: true }),
+        ]);
 
-        // Fetch attendance records with activity details
+        const completedActivitiesCount = completedActivitiesRes.count || 0;
+        const meetingsCount = meetingsRes.count || 0;
+        setTotalCompletedActivities(completedActivitiesCount);
+        setTotalMeetings(meetingsCount);
+
+        // Fetch attendance records
         const { data: attendanceData } = await supabase
           .from('attendance')
-          .select(`
-            id,
-            status,
-            activity_id,
-            activities (
-              name,
-              activity_date
-            )
-          `)
+          .select('id, status, activity_id, meeting_id')
           .eq('user_id', user.id)
-          .not('activity_id', 'is', null)
           .order('marked_at', { ascending: false });
 
-        const totalActivitiesRegistered = totalRegistered || 0;
-
         if (attendanceData) {
-          const history = attendanceData
-            .filter(a => a.activities)
-            .map(a => ({
-              id: a.id,
-              name: (a.activities as any)?.name || 'Unknown Activity',
-              activity_date: (a.activities as any)?.activity_date || '',
-              attended: a.status === 'present',
-            }));
-          setActivityHistory(history);
-        }
+          // Deduplicate by activity_id
+          const activityIds = [...new Set(attendanceData.filter(a => a.activity_id).map(a => a.activity_id!))];
+          const meetingIds = [...new Set(attendanceData.filter(a => a.meeting_id).map(a => a.meeting_id!))];
 
-        setTotalActivitiesRegistered(totalActivitiesRegistered);
+          const [activitiesRes, meetingsDataRes] = await Promise.all([
+            activityIds.length > 0 ? supabase.from('activities').select('id, name, activity_date').in('id', activityIds) : { data: [] },
+            meetingIds.length > 0 ? supabase.from('meetings').select('id, title, meeting_date').in('id', meetingIds) : { data: [] },
+          ]);
+
+          const activityMap = new Map(activitiesRes.data?.map(a => [a.id, a]) || []);
+          const meetingMap = new Map(meetingsDataRes.data?.map(m => [m.id, m]) || []);
+
+          // Deduplicate: one record per activity, prefer 'present'
+          const activitySeen = new Map<string, { id: string; status: string }>();
+          attendanceData.filter(a => a.activity_id).forEach(a => {
+            const existing = activitySeen.get(a.activity_id!);
+            if (!existing || (a.status === 'present' && existing.status !== 'present')) {
+              activitySeen.set(a.activity_id!, a);
+            }
+          });
+
+          const history = Array.from(activitySeen.entries()).map(([actId, record]) => {
+            const act = activityMap.get(actId);
+            return {
+              id: record.id,
+              name: act?.name || 'Unknown Activity',
+              activity_date: act?.activity_date || '',
+              attended: record.status === 'present',
+            };
+          });
+          setActivityHistory(history);
+
+          // Same for meetings
+          const meetingSeen = new Map<string, { id: string; status: string }>();
+          attendanceData.filter(a => a.meeting_id).forEach(a => {
+            const existing = meetingSeen.get(a.meeting_id!);
+            if (!existing || (a.status === 'present' && existing.status !== 'present')) {
+              meetingSeen.set(a.meeting_id!, a);
+            }
+          });
+
+          const mHistory = Array.from(meetingSeen.entries()).map(([mtgId, record]) => {
+            const mtg = meetingMap.get(mtgId);
+            return {
+              id: record.id,
+              title: mtg?.title || 'Unknown Meeting',
+              meeting_date: mtg?.meeting_date || '',
+              attended: record.status === 'present',
+            };
+          });
+          setMeetingHistory(mHistory);
+          setMeetingPresent(mHistory.filter(m => m.attended).length);
+        }
 
         // Fetch certificates
         const { data: certsData } = await supabase
