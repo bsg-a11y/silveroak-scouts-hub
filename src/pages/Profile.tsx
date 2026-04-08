@@ -216,8 +216,16 @@ export default function Profile() {
 
   const fullName = `${fullProfile.first_name} ${fullProfile.middle_name || ''} ${fullProfile.last_name}`.trim();
   const activitiesAttended = activityHistory.filter(a => a.attended).length;
-  const attendancePercentage = totalActivitiesRegistered > 0
-    ? Math.round((activitiesAttended / totalActivitiesRegistered) * 100)
+  const activityPercentage = totalCompletedActivities > 0
+    ? Math.round((activitiesAttended / totalCompletedActivities) * 100)
+    : 0;
+  const meetingPercentage = totalMeetings > 0
+    ? Math.round((meetingPresent / totalMeetings) * 100)
+    : 0;
+  const totalEventsCount = totalCompletedActivities + totalMeetings;
+  const totalAttended = activitiesAttended + meetingPresent;
+  const attendancePercentage = totalEventsCount > 0
+    ? Math.round((totalAttended / totalEventsCount) * 100)
     : 0;
   const userRole = (roles[0] || 'member') as UserRole;
 
