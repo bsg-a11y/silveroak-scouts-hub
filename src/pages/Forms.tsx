@@ -98,6 +98,8 @@ export default function Forms() {
     description: '',
     form_type: 'general',
     fields: [] as FormField[],
+    visibility_type: 'everyone',
+    assigned_member_ids: [] as string[],
   });
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -105,7 +107,10 @@ export default function Forms() {
     form_type: 'general',
     fields: [] as FormField[],
     is_active: true,
+    visibility_type: 'everyone',
+    assigned_member_ids: [] as string[],
   });
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [newField, setNewField] = useState<Partial<FormField>>({
     label: '',
     type: 'text',
