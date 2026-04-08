@@ -829,6 +829,50 @@ export default function Forms() {
                 <Textarea value={newFormData.description} onChange={(e) => setNewFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe the form purpose..." rows={2} />
               </div>
 
+              {/* Visibility Controls */}
+              <div className="space-y-2">
+                <Label>Form Visibility</Label>
+                <Select value={newFormData.visibility_type} onValueChange={(v) => setNewFormData(prev => ({ ...prev, visibility_type: v, assigned_member_ids: v === 'everyone' ? [] : prev.assigned_member_ids }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Open for Everyone</SelectItem>
+                    <SelectItem value="selected_members">Selected Members Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {newFormData.visibility_type === 'selected_members' && (
+                <div className="space-y-2 border rounded-lg p-3">
+                  <Label>Select Members ({newFormData.assigned_member_ids.length} selected)</Label>
+                  <Input placeholder="Search members..." value={memberSearchQuery} onChange={(e) => setMemberSearchQuery(e.target.value)} />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {members
+                      .filter(m => {
+                        if (!memberSearchQuery) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        return m.first_name.toLowerCase().includes(q) || m.last_name.toLowerCase().includes(q) || m.uid.toLowerCase().includes(q);
+                      })
+                      .map(m => (
+                        <div key={m.user_id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50">
+                          <Checkbox
+                            checked={newFormData.assigned_member_ids.includes(m.user_id)}
+                            onCheckedChange={(checked) => {
+                              setNewFormData(prev => ({
+                                ...prev,
+                                assigned_member_ids: checked
+                                  ? [...prev.assigned_member_ids, m.user_id]
+                                  : prev.assigned_member_ids.filter(id => id !== m.user_id)
+                              }));
+                            }}
+                          />
+                          <span className="text-sm">{m.first_name} {m.last_name}</span>
+                          <span className="text-xs text-muted-foreground">({m.uid})</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               <div className="border rounded-lg p-4 space-y-4">
                 <Label>Add Field</Label>
                 <div className="grid grid-cols-2 gap-4">
