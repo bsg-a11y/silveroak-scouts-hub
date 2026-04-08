@@ -215,6 +215,8 @@ export default function Forms() {
       form_type: form.form_type,
       fields: [...form.fields],
       is_active: form.is_active,
+      visibility_type: form.visibility_type || 'everyone',
+      assigned_member_ids: form.assigned_member_ids || [],
     });
     setIsEditFormDialogOpen(true);
   };
