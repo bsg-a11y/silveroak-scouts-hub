@@ -328,8 +328,8 @@ export default function Profile() {
                   <ClipboardCheck className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{attendancePercentage}%</p>
-                  <p className="text-xs text-muted-foreground">Attendance ({activitiesAttended}/{totalActivitiesRegistered})</p>
+                   <p className="text-2xl font-bold font-display">{attendancePercentage}%</p>
+                  <p className="text-xs text-muted-foreground">Overall ({totalAttended}/{totalEventsCount})</p>
                 </div>
               </div>
             </CardContent>
@@ -341,8 +341,8 @@ export default function Profile() {
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{totalActivitiesRegistered}</p>
-                  <p className="text-xs text-muted-foreground">Registered</p>
+                  <p className="text-2xl font-bold font-display">{activitiesAttended}/{totalCompletedActivities}</p>
+                  <p className="text-xs text-muted-foreground">Activities</p>
                 </div>
               </div>
             </CardContent>
