@@ -17,7 +17,8 @@ import {
   Award,
   ClipboardCheck,
   FileText,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react';
 import { ROLE_LABELS, type UserRole } from '@/types';
 import { format } from 'date-fns';
