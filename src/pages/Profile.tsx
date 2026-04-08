@@ -128,8 +128,8 @@ export default function Profile() {
             meetingIds.length > 0 ? supabase.from('meetings').select('id, title, meeting_date').in('id', meetingIds) : { data: [] },
           ]);
 
-          const activityMap = new Map(activitiesRes.data?.map(a => [a.id, a]) || []);
-          const meetingMap = new Map(meetingsDataRes.data?.map(m => [m.id, m]) || []);
+          const activityMap = new Map<string, any>(activitiesRes.data?.map(a => [a.id, a] as [string, any]) || []);
+          const meetingMap = new Map<string, any>(meetingsDataRes.data?.map(m => [m.id, m] as [string, any]) || []);
 
           // Deduplicate: one record per activity, prefer 'present'
           const activitySeen = new Map<string, { id: string; status: string }>();
