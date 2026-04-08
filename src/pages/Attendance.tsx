@@ -396,7 +396,9 @@ export default function Attendance() {
                       <span className="text-sm text-muted-foreground">Activity Attendance</span>
                       <span className="text-2xl font-bold text-bsg-green">{myActivityPercentage}%</span>
                     </div>
-                    <Progress value={myActivityPercentage} className="h-2" />
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-bsg-green transition-all duration-500" style={{ width: `${myActivityPercentage}%` }} />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       {myActivityPresent} of {totalCompletedActivities} completed activities
                     </p>
