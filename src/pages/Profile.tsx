@@ -74,8 +74,10 @@ export default function Profile() {
   const { user, profile: authProfile, roles } = useAuth();
   const [fullProfile, setFullProfile] = useState<FullProfile | null>(null);
   const [activityHistory, setActivityHistory] = useState<ActivityHistory[]>([]);
-  const [totalActivitiesRegistered, setTotalActivitiesRegistered] = useState(0);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [totalCompletedActivities, setTotalCompletedActivities] = useState(0);
+  const [totalMeetings, setTotalMeetings] = useState(0);
+  const [meetingHistory, setMeetingHistory] = useState<{ id: string; title: string; meeting_date: string; attended: boolean }[]>([]);
+  const [meetingPresent, setMeetingPresent] = useState(0);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getUserExaminationBadge } = useExaminations();
