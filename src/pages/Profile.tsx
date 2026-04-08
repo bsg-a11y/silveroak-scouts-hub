@@ -81,6 +81,7 @@ export default function Profile() {
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { getUserExaminationBadge } = useExaminations();
 
   useEffect(() => {
     const fetchProfileData = async () => {
