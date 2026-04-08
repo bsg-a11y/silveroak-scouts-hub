@@ -714,6 +714,7 @@ export type Database = {
       }
       custom_forms: {
         Row: {
+          assigned_member_ids: string[] | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -723,8 +724,10 @@ export type Database = {
           is_active: boolean
           title: string
           updated_at: string
+          visibility_type: string
         }
         Insert: {
+          assigned_member_ids?: string[] | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -734,8 +737,10 @@ export type Database = {
           is_active?: boolean
           title: string
           updated_at?: string
+          visibility_type?: string
         }
         Update: {
+          assigned_member_ids?: string[] | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -745,6 +750,7 @@ export type Database = {
           is_active?: boolean
           title?: string
           updated_at?: string
+          visibility_type?: string
         }
         Relationships: []
       }
