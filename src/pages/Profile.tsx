@@ -351,6 +351,19 @@ export default function Profile() {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-accent/10">
+                  <Users className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{meetingPresent}/{totalMeetings}</p>
+                  <p className="text-xs text-muted-foreground">Meetings</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card variant="stat">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/10">
                   <Award className="h-5 w-5 text-accent" />
                 </div>
                 <div>
