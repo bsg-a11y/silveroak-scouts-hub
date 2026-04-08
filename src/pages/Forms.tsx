@@ -284,7 +284,15 @@ export default function Forms() {
   };
 
   const currentSkills = COMMITTEE_SKILLS[formData.application_type] || [];
-  const activeCustomForms = forms.filter(f => f.is_active);
+  const activeCustomForms = forms.filter(f => {
+    if (!f.is_active) return false;
+    if (isAdminOrCoordinator) return true;
+    if (f.visibility_type === 'everyone') return true;
+    if (f.visibility_type === 'selected_members' && user) {
+      return f.assigned_member_ids?.includes(user.id);
+    }
+    return false;
+  });
    const activeApplicationTypes = APPLICATION_TYPES.filter(t => isTypeActive(t.value));
    const isLoading = isLoadingApps || isLoadingForms || isLoadingSettings;
 
