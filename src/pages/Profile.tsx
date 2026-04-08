@@ -79,7 +79,7 @@ export default function Profile() {
   const [meetingHistory, setMeetingHistory] = useState<{ id: string; title: string; meeting_date: string; attended: boolean }[]>([]);
   const [meetingPresent, setMeetingPresent] = useState(0);
   const [leaveHistory, setLeaveHistory] = useState<LeaveHistory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const { getUserExaminationBadge } = useExaminations();
 
   useEffect(() => {
