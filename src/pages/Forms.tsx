@@ -549,6 +549,7 @@ export default function Forms() {
                           <TableHead>Title</TableHead>
                           <TableHead>Fields</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Visibility</TableHead>
                           <TableHead>Created</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -561,6 +562,11 @@ export default function Forms() {
                             <TableCell>
                               <Badge variant={form.is_active ? 'default' : 'secondary'}>
                                 {form.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {form.visibility_type === 'everyone' ? 'Everyone' : `${form.assigned_member_ids?.length || 0} members`}
                               </Badge>
                             </TableCell>
                             <TableCell>{format(new Date(form.created_at), 'MMM d, yyyy')}</TableCell>
