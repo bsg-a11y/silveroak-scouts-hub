@@ -66,7 +66,9 @@ export function useCustomForms() {
     // Parse fields from JSON
     const parsedForms = (data || []).map(form => ({
       ...form,
-      fields: Array.isArray(form.fields) ? form.fields : JSON.parse(form.fields as string || '[]')
+      fields: Array.isArray(form.fields) ? form.fields : JSON.parse(form.fields as string || '[]'),
+      assigned_member_ids: form.assigned_member_ids || [],
+      visibility_type: form.visibility_type || 'everyone',
     })) as CustomForm[];
 
     setForms(parsedForms);
