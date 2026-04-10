@@ -95,6 +95,7 @@ export default function FacultyDashboard() {
   const [activities, setActivities] = useState<ActivityWithRegistrations[]>([]);
   const [meetings, setMeetings] = useState<MeetingWithAttendance[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [externalParticipants, setExternalParticipants] = useState<ExternalParticipant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedColleges, setSelectedColleges] = useState<string[]>([]);
