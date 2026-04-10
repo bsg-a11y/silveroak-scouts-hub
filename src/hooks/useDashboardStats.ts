@@ -117,16 +117,21 @@ export function useDashboardStats() {
         .lt('available_quantity', 10);
 
       // Calculate REAL attendance percentages from actual attendance records
-      // Total completed activities (denominator for activity attendance)
-      const { count: totalCompletedActivities } = await supabase
+      // Total completed activities (denominator)
+      const { data: completedActivitiesData } = await supabase
         .from('activities')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('status', 'completed');
 
-      // Total meetings (denominator for meeting attendance)
-      const { count: totalMeetingsCount } = await supabase
+      const totalCompletedActivities = completedActivitiesData?.length || 0;
+
+      // Total meetings up to today (denominator)
+      const { data: pastMeetingsData } = await supabase
         .from('meetings')
-        .select('*', { count: 'exact', head: true });
+        .select('id')
+        .lte('meeting_date', today);
+
+      const totalPastMeetings = pastMeetingsData?.length || 0;
 
       // Activity attendance - present records
       const { data: activityAttendance } = await supabase
@@ -134,17 +139,15 @@ export function useDashboardStats() {
         .select('status, activity_id')
         .not('activity_id', 'is', null);
 
-      const activityPresent = activityAttendance?.filter(a => a.status === 'present').length || 0;
-      
-      // Use total completed activities as denominator (not just records with attendance)
-      const activityDenominator = (totalCompletedActivities || 0) * (totalMembers || 1);
-      const activityAttendancePercentage = activityDenominator > 0 
-        ? Math.round((activityPresent / (activityAttendance?.length || 1)) * 100) 
-        : 0;
+      // Count unique activities where at least one member was present
+      const activitiesWithPresent = new Set(
+        activityAttendance?.filter(a => a.status === 'present').map(a => a.activity_id)
+      );
+      const totalActivitiesWithAttendance = new Set(activityAttendance?.map(a => a.activity_id)).size;
 
-      // Count unique activities with attendance records
-      const uniqueActivityIds = new Set(activityAttendance?.map(a => a.activity_id));
-      const totalActivitiesWithAttendance = uniqueActivityIds.size;
+      const activityAttendancePercentage = totalCompletedActivities > 0
+        ? Math.round((activitiesWithPresent.size / totalCompletedActivities) * 100)
+        : 0;
 
       // Meeting attendance
       const { data: meetingAttendance } = await supabase
@@ -152,18 +155,18 @@ export function useDashboardStats() {
         .select('status, meeting_id')
         .not('meeting_id', 'is', null);
 
-      const meetingPresent = meetingAttendance?.filter(a => a.status === 'present').length || 0;
-      const meetingAttendancePercentage = (meetingAttendance?.length || 0) > 0 
-        ? Math.round((meetingPresent / (meetingAttendance?.length || 1)) * 100) 
+      const meetingsWithPresent = new Set(
+        meetingAttendance?.filter(a => a.status === 'present').map(a => a.meeting_id)
+      );
+      const totalMeetingsWithAttendance = new Set(meetingAttendance?.map(a => a.meeting_id)).size;
+
+      const meetingAttendancePercentage = totalPastMeetings > 0
+        ? Math.round((meetingsWithPresent.size / totalPastMeetings) * 100)
         : 0;
 
-      // Count unique meetings with attendance records
-      const uniqueMeetingIds = new Set(meetingAttendance?.map(a => a.meeting_id));
-      const totalMeetingsWithAttendance = uniqueMeetingIds.size;
-
       // Overall attendance percentage (combined)
-      const overallTotal = (activityAttendance?.length || 0) + (meetingAttendance?.length || 0);
-      const overallPresent = activityPresent + meetingPresent;
+      const overallTotal = totalCompletedActivities + totalPastMeetings;
+      const overallPresent = activitiesWithPresent.size + meetingsWithPresent.size;
       const attendancePercentage = overallTotal > 0 
         ? Math.round((overallPresent / overallTotal) * 100) 
         : 0;
