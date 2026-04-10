@@ -826,7 +826,7 @@ export default function FacultyDashboard() {
                       )}
                     </CardHeader>
                     <CardContent className="p-0">
-                      {filteredRegistrations.length === 0 ? (
+                      {filteredRegistrations.length === 0 && filteredExternalParticipants.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                           <Users className="h-12 w-12 mb-4 opacity-50" />
                           <p>No registrations found</p>
@@ -837,6 +837,7 @@ export default function FacultyDashboard() {
                             <TableHeader>
                               <TableRow className="bg-muted/30">
                                 <TableHead className="w-[250px]">Student</TableHead>
+                                <TableHead>Type</TableHead>
                                 <TableHead>Enrollment</TableHead>
                                 <TableHead>College</TableHead>
                                 <TableHead>Department</TableHead>
@@ -847,7 +848,7 @@ export default function FacultyDashboard() {
                             </TableHeader>
                             <TableBody>
                               {filteredRegistrations.map((reg, idx) => (
-                                <TableRow key={idx}>
+                                <TableRow key={`bsg-${idx}`}>
                                   <TableCell>
                                     <div className="flex items-center gap-3">
                                       <SecureAvatar
@@ -863,6 +864,7 @@ export default function FacultyDashboard() {
                                       </div>
                                     </div>
                                   </TableCell>
+                                  <TableCell><Badge variant="secondary" className="text-xs">BSG</Badge></TableCell>
                                   <TableCell>{reg.profile.enrollment_number || '-'}</TableCell>
                                   <TableCell>{reg.profile.college_name || '-'}</TableCell>
                                   <TableCell>
@@ -873,6 +875,34 @@ export default function FacultyDashboard() {
                                   <TableCell>{reg.profile.whatsapp_number || '-'}</TableCell>
                                   <TableCell className="text-xs">{reg.profile.email || '-'}</TableCell>
                                   <TableCell className="text-xs">{format(new Date(reg.registered_at), 'PPp')}</TableCell>
+                                </TableRow>
+                              ))}
+                              {filteredExternalParticipants.map((ep) => (
+                                <TableRow key={`ext-${ep.id}`}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <SecureAvatar
+                                        src={null}
+                                        fallback={ep.name.charAt(0)}
+                                        className="h-9 w-9"
+                                        fallbackClassName="text-sm"
+                                      />
+                                      <div>
+                                        <p className="font-medium">{ep.name}</p>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell><Badge variant="outline" className="text-xs">Non-BSG</Badge></TableCell>
+                                  <TableCell>{ep.enrollment_number || '-'}</TableCell>
+                                  <TableCell>{ep.college_name || '-'}</TableCell>
+                                  <TableCell>
+                                    {ep.department ? (
+                                      <span className="text-xs">{ep.department}</span>
+                                    ) : '-'}
+                                  </TableCell>
+                                  <TableCell>-</TableCell>
+                                  <TableCell className="text-xs">-</TableCell>
+                                  <TableCell className="text-xs">{format(new Date(ep.created_at), 'PPp')}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
