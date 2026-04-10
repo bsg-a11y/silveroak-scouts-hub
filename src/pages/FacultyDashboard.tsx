@@ -62,6 +62,18 @@ interface MeetingWithAttendance {
   meeting_date: string;
 }
 
+interface ExternalParticipant {
+  id: string;
+  name: string;
+  enrollment_number: string | null;
+  college_name: string | null;
+  department: string | null;
+  semester: number | null;
+  activity_id: string | null;
+  meeting_id: string | null;
+  created_at: string;
+}
+
 interface AttendanceRecord {
   user_id: string;
   status: string;
