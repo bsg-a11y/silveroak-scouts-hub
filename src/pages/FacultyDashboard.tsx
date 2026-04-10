@@ -251,6 +251,17 @@ export default function FacultyDashboard() {
     return matchesSearch && matchesCollege && matchesDepartment;
   }) || [];
 
+  // Get external participants for selected activity
+  const filteredExternalParticipants = externalParticipants
+    .filter(ep => ep.activity_id === selectedActivity)
+    .filter(ep => {
+      const matchesSearch = ep.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ep.enrollment_number || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCollege = selectedColleges.length === 0 || selectedColleges.includes(ep.college_name || '');
+      const matchesDepartment = selectedDepartments.length === 0 || selectedDepartments.includes(ep.department || '');
+      return matchesSearch && matchesCollege && matchesDepartment;
+    });
+
   // Calculate attendance stats using same formula as other dashboards
   const calculateAttendanceStats = () => {
     // Get completed activities and past meetings as denominators
