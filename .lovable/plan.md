@@ -1,114 +1,50 @@
 
-# Plan: Add Custom Password Support for Password Reset
 
-## Overview
-Enable admins to set custom passwords when resetting member passwords, in addition to the existing auto-generate option. The backend edge function already supports this - we just need to update the UI.
+## Plan: Semester Auto-Update, Attendance Sync Verification, and Bulk Member Selection
 
-## Current State Analysis
+### A. Auto-Update Semesters on Jan 1 and July 1
 
-### Backend (Already Working)
-The `reset-password` edge function at `supabase/functions/reset-password/index.ts` already accepts an optional `new_password` parameter:
-- If `new_password` is provided, it uses that password
-- If not provided, it auto-generates a secure 16-character password
+Create a scheduled edge function that increments `current_semester` by 1 for all active member profiles. This will be triggered via a `pg_cron` job on January 1st and July 1st (note: June has 30 days, so using July 1st instead of June 31st which doesn't exist).
 
-### Frontend (Needs Update)
-The Reset Password dialog in `src/pages/Members.tsx` (lines 1060-1122) currently:
-- Only shows a confirmation message
-- Automatically generates a random password
-- Does not allow admin to enter a custom password
+**Steps:**
+1. Create `supabase/functions/update-semesters/index.ts` edge function that:
+   - Uses service role to update all profiles where `current_semester IS NOT NULL` and `status = 'active'`
+   - Increments `current_semester` by 1
+   - Caps at a reasonable max (e.g., 10 for degree, 6 for diploma based on `course_duration`)
+   - Returns count of updated records
 
----
+2. Set up two `pg_cron` scheduled jobs (via insert tool):
+   - `0 0 1 1 *` (January 1st midnight)
+   - `0 0 1 7 *` (July 1st midnight)
+   - Both call the edge function via `net.http_post`
 
-## Implementation Plan
+3. Enable `pg_cron` and `pg_net` extensions via migration.
 
-### Phase 1: Update Reset Password Dialog UI
+### B. Verify Attendance Sync Across Dashboards
 
-**File:** `src/pages/Members.tsx`
+Review and fix attendance calculation consistency across:
+- **Dashboard.tsx** (`useDashboardStats`) — overall stats
+- **Profile.tsx** — member's own attendance (completed activities attended / total completed)
+- **Attendance.tsx** — member view progress bars
+- **MemberDetailsDialog.tsx** — admin viewing a member's details
+- **FacultyDashboard.tsx** — faculty view
 
-**Changes:**
-1. Add a new state variable `customPassword` to store admin-entered password
-2. Add a toggle to switch between "Auto-generate" and "Custom password" modes
-3. Add a password input field that appears when custom mode is selected
-4. Add password visibility toggle for the custom password field
-5. Add password validation (minimum 6 characters)
+Ensure all use the same formula: `attended (present) / total completed activities` and `attended / total meetings`. Fix any inconsistencies found (the dashboard stats hook currently has a confusing calculation mixing record counts with member-weighted denominators).
 
-**New UI Layout:**
-```text
-+------------------------------------------+
-|  Reset Password                          |
-|  ----------------------------------------|
-|  Member: John Doe                        |
-|                                          |
-|  Password Type:                          |
-|  [Auto-generate] [Custom Password]       |
-|                                          |
-|  (If Custom selected):                   |
-|  New Password: [______________] [Eye]    |
-|  Min. 6 characters                       |
-|                                          |
-|  [Cancel]            [Reset Password]    |
-+------------------------------------------+
-```
+### C. Add Bulk Member Selection for Forms
 
-### Phase 2: Update Password Reset Handler
+Add "Select All" / "Deselect All" buttons to the member picker in both the Create Form and Edit Form dialogs. Also add "Select All Filtered" when a search is active.
 
-**File:** `src/pages/Members.tsx`
+**Changes to `src/pages/Forms.tsx`:**
+- Add "Select All" and "Deselect All" buttons above the member list in both create and edit form dialogs
+- When search is active, "Select All" selects only filtered members
+- Show selected count clearly
 
-**Changes to `handleResetPassword` function:**
-1. Check if custom password mode is selected
-2. Validate custom password length (minimum 6 characters)
-3. Pass `new_password` to edge function when custom password is provided
-4. Show appropriate success message based on mode used
+### Technical Details
 
-**Updated API call:**
-```typescript
-const response = await supabase.functions.invoke('reset-password', {
-  body: { 
-    user_id: resetPasswordMember.userId,
-    new_password: useCustomPassword ? customPassword : undefined
-  },
-});
-```
-
----
-
-## Technical Details
-
-### State Variables to Add
-```typescript
-const [useCustomPassword, setUseCustomPassword] = useState(false);
-const [customPassword, setCustomPassword] = useState('');
-const [showCustomPassword, setShowCustomPassword] = useState(false);
-```
-
-### Validation Rules
-- Custom password minimum length: 6 characters (matching existing member creation validation)
-- Disable "Reset Password" button if custom mode is selected but password is too short
-
-### Reset State on Dialog Close
-When the dialog closes, reset all password-related states:
-- `customPassword` → ''
-- `useCustomPassword` → false
-- `showCustomPassword` → false
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/Members.tsx` | Add custom password UI, state management, and update handler |
-
-## Security Considerations
-- Password is transmitted over HTTPS to the edge function
-- Edge function already validates admin role before allowing password reset
-- Custom password follows same security path as auto-generated password
-
-## Implementation Steps
-1. Add new state variables for custom password functionality
-2. Update the Reset Password dialog UI with toggle and input field
-3. Modify `handleResetPassword` to pass custom password when provided
-4. Add password visibility toggle using Eye/EyeOff icons
-5. Add validation feedback for password length
-6. Reset all states when dialog closes
+| Task | Files Changed |
+|------|--------------|
+| Semester cron | New: `supabase/functions/update-semesters/index.ts`, migration for pg_cron/pg_net, cron job SQL insert |
+| Attendance sync | `src/hooks/useDashboardStats.ts`, possibly `src/components/MemberDetailsDialog.tsx`, `src/pages/FacultyDashboard.tsx` |
+| Bulk member selection | `src/pages/Forms.tsx` |
 
