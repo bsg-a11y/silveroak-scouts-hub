@@ -654,7 +654,9 @@ export default function FacultyDashboard() {
                           <CardDescription>
                             {format(new Date(activity.activity_date), 'PPP')} • 
                             <Badge variant="secondary" className="ml-2">{activity.status}</Badge>
-                            <Badge variant="outline" className="ml-2">{activity.registrations.length} registered</Badge>
+                            <Badge variant="outline" className="ml-2">
+                              {activity.registrations.length} BSG + {externalParticipants.filter(ep => ep.activity_id === activity.id).length} Non-BSG
+                            </Badge>
                           </CardDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
