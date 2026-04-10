@@ -224,6 +224,7 @@ export default function FacultyDashboard() {
       
       setExternalParticipants(externalData || []);
 
+    } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
