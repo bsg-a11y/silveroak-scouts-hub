@@ -217,7 +217,13 @@ export default function FacultyDashboard() {
 
       setAttendance(attendanceWithProfiles);
 
-    } catch (error) {
+      // Fetch external (non-BSG) participants
+      const { data: externalData } = await supabase
+        .from('external_participants')
+        .select('id, name, enrollment_number, college_name, department, semester, activity_id, meeting_id, created_at');
+      
+      setExternalParticipants(externalData || []);
+
       console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
