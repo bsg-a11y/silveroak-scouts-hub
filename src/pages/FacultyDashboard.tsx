@@ -231,16 +231,27 @@ export default function FacultyDashboard() {
     return matchesSearch && matchesCollege && matchesDepartment;
   }) || [];
 
-  // Calculate attendance stats
+  // Calculate attendance stats using same formula as other dashboards
   const calculateAttendanceStats = () => {
+    // Get completed activities and past meetings as denominators
+    const completedActivities = activities.filter(a => a.status === 'completed');
+    const pastMeetings = meetings.filter(m => new Date(m.meeting_date) <= new Date());
+
     const activityAttendance = attendance.filter(a => a.activity_id);
     const meetingAttendance = attendance.filter(a => a.meeting_id);
-    
-    const activityPresent = activityAttendance.filter(a => a.status === 'present').length;
-    const meetingPresent = meetingAttendance.filter(a => a.status === 'present').length;
-    
-    const activityTotal = activityAttendance.length;
-    const meetingTotal = meetingAttendance.length;
+
+    // Count unique activities/meetings with at least one present
+    const activitiesWithPresent = new Set(
+      activityAttendance.filter(a => a.status === 'present').map(a => a.activity_id)
+    );
+    const meetingsWithPresent = new Set(
+      meetingAttendance.filter(a => a.status === 'present').map(a => a.meeting_id)
+    );
+
+    const activityTotal = completedActivities.length;
+    const meetingTotal = pastMeetings.length;
+    const activityPresent = activitiesWithPresent.size;
+    const meetingPresent = meetingsWithPresent.size;
     const overallTotal = activityTotal + meetingTotal;
     const overallPresent = activityPresent + meetingPresent;
     
