@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.create-faculty]
 verify_jwt = false
+
+[functions.update-semesters]
+verify_jwt = false

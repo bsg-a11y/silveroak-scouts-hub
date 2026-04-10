@@ -851,6 +851,22 @@ export default function Forms() {
                 <div className="space-y-2 border rounded-lg p-3">
                   <Label>Select Members ({newFormData.assigned_member_ids.length} selected)</Label>
                   <Input placeholder="Search members..." value={memberSearchQuery} onChange={(e) => setMemberSearchQuery(e.target.value)} />
+                  <div className="flex gap-2 mb-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => {
+                      const filtered = members.filter(m => {
+                        if (!memberSearchQuery) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        return m.first_name.toLowerCase().includes(q) || m.last_name.toLowerCase().includes(q) || m.uid.toLowerCase().includes(q);
+                      });
+                      const ids = filtered.map(m => m.user_id);
+                      setNewFormData(prev => ({ ...prev, assigned_member_ids: [...new Set([...prev.assigned_member_ids, ...ids])] }));
+                    }}>
+                      {memberSearchQuery ? 'Select All Filtered' : 'Select All'}
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setNewFormData(prev => ({ ...prev, assigned_member_ids: [] }))}>
+                      Deselect All
+                    </Button>
+                  </div>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {members
                       .filter(m => {
@@ -994,6 +1010,22 @@ export default function Forms() {
                 <div className="space-y-2 border rounded-lg p-3">
                   <Label>Select Members ({editFormData.assigned_member_ids.length} selected)</Label>
                   <Input placeholder="Search members..." onChange={(e) => setMemberSearchQuery(e.target.value)} />
+                  <div className="flex gap-2 mb-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => {
+                      const filtered = members.filter(m => {
+                        if (!memberSearchQuery) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        return m.first_name.toLowerCase().includes(q) || m.last_name.toLowerCase().includes(q) || m.uid.toLowerCase().includes(q);
+                      });
+                      const ids = filtered.map(m => m.user_id);
+                      setEditFormData(prev => ({ ...prev, assigned_member_ids: [...new Set([...prev.assigned_member_ids, ...ids])] }));
+                    }}>
+                      {memberSearchQuery ? 'Select All Filtered' : 'Select All'}
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setEditFormData(prev => ({ ...prev, assigned_member_ids: [] }))}>
+                      Deselect All
+                    </Button>
+                  </div>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {members
                       .filter(m => {
