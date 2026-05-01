@@ -743,10 +743,65 @@ export default function Attendance() {
                   />
                 )}
               </TabsContent>
+
+              <TabsContent value="office" className="space-y-4">
+                <OfficeAttendanceSection members={members} />
+              </TabsContent>
+
+              <TabsContent value="reports" className="space-y-4">
+                <AttendancePercentageSection members={members} />
+              </TabsContent>
             </>
           )}
         </Tabs>
       </div>
     </DashboardLayout>
+  );
+}
+
+function MyOfficeHoursCard({ userId }: { userId?: string }) {
+  const now = new Date();
+  const fromDate = startOfMonth(now).toISOString().slice(0, 10);
+  const toDate = endOfMonth(now).toISOString().slice(0, 10);
+  const { logs } = useOfficeAttendance({ userId, fromDate, toDate, enabled: !!userId });
+
+  const totalMin = sumMinutes(logs);
+  const byDate = useMemo(() => {
+    const m = new Map<string, typeof logs>();
+    for (const l of logs) {
+      const arr = m.get(l.log_date) || [];
+      arr.push(l);
+      m.set(l.log_date, arr);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [logs]);
+
+  if (!userId) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center justify-between">
+          <span>Office Hours This Month</span>
+          <span className="text-2xl font-bold text-bsg-green">{formatHours(totalMin)}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {byDate.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No office check-ins this month.</p>
+        ) : (
+          <div className="space-y-2 max-h-[260px] overflow-auto">
+            {byDate.map(([date, arr]) => (
+              <div key={date} className="flex items-center justify-between text-sm border-b pb-1">
+                <span className="font-medium">{format(new Date(date), 'dd MMM yyyy')}</span>
+                <span>
+                  {arr.length} session{arr.length > 1 ? 's' : ''} • <strong>{formatHours(sumMinutes(arr))}</strong>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
