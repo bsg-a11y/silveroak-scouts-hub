@@ -1111,6 +1111,42 @@ export type Database = {
         }
         Relationships: []
       }
+      office_attendance_logs: {
+        Row: {
+          check_in_at: string
+          check_out_at: string | null
+          created_at: string
+          id: string
+          log_date: string | null
+          marked_by: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_in_at?: string
+          check_out_at?: string | null
+          created_at?: string
+          id?: string
+          log_date?: string | null
+          marked_by?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_in_at?: string
+          check_out_at?: string | null
+          created_at?: string
+          id?: string
+          log_date?: string | null
+          marked_by?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           aadhaar_number: string | null

@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ExternalParticipantsManager } from '@/components/ExternalParticipantsManager';
+import { OfficeAttendanceSection } from '@/components/OfficeAttendanceSection';
+import { AttendancePercentageSection } from '@/components/AttendancePercentageSection';
+import { useOfficeAttendance, formatHours, sumMinutes } from '@/hooks/useOfficeAttendance';
+import { startOfMonth, endOfMonth } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -382,6 +386,8 @@ export default function Attendance() {
               <>
                 <TabsTrigger value="activities">Activity Attendance</TabsTrigger>
                 <TabsTrigger value="meetings">Meeting Attendance</TabsTrigger>
+                <TabsTrigger value="office">Office Attendance</TabsTrigger>
+                <TabsTrigger value="reports">Reports & Filter</TabsTrigger>
               </>
             )}
           </TabsList>
@@ -389,6 +395,7 @@ export default function Attendance() {
           {/* My Attendance Tab (for non-admin users) */}
           {!isAdminOrCoordinator && (
             <TabsContent value="my-attendance" className="space-y-6">
+              <MyOfficeHoursCard userId={user?.id} />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4">
@@ -736,10 +743,65 @@ export default function Attendance() {
                   />
                 )}
               </TabsContent>
+
+              <TabsContent value="office" className="space-y-4">
+                <OfficeAttendanceSection members={members} />
+              </TabsContent>
+
+              <TabsContent value="reports" className="space-y-4">
+                <AttendancePercentageSection members={members} />
+              </TabsContent>
             </>
           )}
         </Tabs>
       </div>
     </DashboardLayout>
+  );
+}
+
+function MyOfficeHoursCard({ userId }: { userId?: string }) {
+  const now = new Date();
+  const fromDate = startOfMonth(now).toISOString().slice(0, 10);
+  const toDate = endOfMonth(now).toISOString().slice(0, 10);
+  const { logs } = useOfficeAttendance({ userId, fromDate, toDate, enabled: !!userId });
+
+  const totalMin = sumMinutes(logs);
+  const byDate = useMemo(() => {
+    const m = new Map<string, typeof logs>();
+    for (const l of logs) {
+      const arr = m.get(l.log_date) || [];
+      arr.push(l);
+      m.set(l.log_date, arr);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [logs]);
+
+  if (!userId) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center justify-between">
+          <span>Office Hours This Month</span>
+          <span className="text-2xl font-bold text-bsg-green">{formatHours(totalMin)}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {byDate.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No office check-ins this month.</p>
+        ) : (
+          <div className="space-y-2 max-h-[260px] overflow-auto">
+            {byDate.map(([date, arr]) => (
+              <div key={date} className="flex items-center justify-between text-sm border-b pb-1">
+                <span className="font-medium">{format(new Date(date), 'dd MMM yyyy')}</span>
+                <span>
+                  {arr.length} session{arr.length > 1 ? 's' : ''} • <strong>{formatHours(sumMinutes(arr))}</strong>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
