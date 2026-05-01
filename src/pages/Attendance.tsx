@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ExternalParticipantsManager } from '@/components/ExternalParticipantsManager';
+import { OfficeAttendanceSection } from '@/components/OfficeAttendanceSection';
+import { AttendancePercentageSection } from '@/components/AttendancePercentageSection';
+import { useOfficeAttendance, formatHours, sumMinutes } from '@/hooks/useOfficeAttendance';
+import { startOfMonth, endOfMonth } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -382,6 +386,8 @@ export default function Attendance() {
               <>
                 <TabsTrigger value="activities">Activity Attendance</TabsTrigger>
                 <TabsTrigger value="meetings">Meeting Attendance</TabsTrigger>
+                <TabsTrigger value="office">Office Attendance</TabsTrigger>
+                <TabsTrigger value="reports">Reports & Filter</TabsTrigger>
               </>
             )}
           </TabsList>
@@ -389,6 +395,7 @@ export default function Attendance() {
           {/* My Attendance Tab (for non-admin users) */}
           {!isAdminOrCoordinator && (
             <TabsContent value="my-attendance" className="space-y-6">
+              <MyOfficeHoursCard userId={user?.id} />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4">
