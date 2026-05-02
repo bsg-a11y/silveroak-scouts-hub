@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ExternalParticipantsManager } from '@/components/ExternalParticipantsManager';
 import { OfficeAttendanceSection } from '@/components/OfficeAttendanceSection';
 import { AttendancePercentageSection } from '@/components/AttendancePercentageSection';
+import { OfficeRulesCard } from '@/components/OfficeRulesCard';
 import { useOfficeAttendance, formatHours, sumMinutes } from '@/hooks/useOfficeAttendance';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -396,6 +397,7 @@ export default function Attendance() {
           {!isAdminOrCoordinator && (
             <TabsContent value="my-attendance" className="space-y-6">
               <MyOfficeHoursCard userId={user?.id} />
+              <OfficeRulesCard isAdmin={false} userId={user?.id} />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4">
