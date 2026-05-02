@@ -116,3 +116,80 @@ export async function checkOutMember(userId: string) {
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+export async function updateOfficeLog(id: string, fields: { check_in_at?: string; check_out_at?: string | null; notes?: string | null }) {
+  const payload: any = { ...fields };
+  if (fields.check_in_at) {
+    payload.log_date = fields.check_in_at.slice(0, 10);
+  }
+  const { error } = await supabase.from('office_attendance_logs').update(payload).eq('id', id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function deleteOfficeLog(id: string) {
+  const { error } = await supabase.from('office_attendance_logs').delete().eq('id', id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/* -------- Office Rules -------- */
+export interface OfficeRules {
+  id: string;
+  weekly_hours_target: number;
+  monthly_hours_target: number;
+  open_time: string;   // 'HH:MM:SS'
+  close_time: string;
+  enforce_window: boolean;
+  rules_text: string;
+  updated_at: string;
+}
+
+export function useOfficeRules() {
+  const [rules, setRules] = useState<OfficeRules | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchRules = useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('office_rules')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      toast({ title: 'Error loading office rules', description: error.message, variant: 'destructive' });
+    } else {
+      setRules(data as any);
+    }
+    setIsLoading(false);
+  }, [toast]);
+
+  useEffect(() => {
+    fetchRules();
+    const ch = supabase
+      .channel('office-rules')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'office_rules' }, () => fetchRules())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchRules]);
+
+  const saveRules = async (patch: Partial<OfficeRules>) => {
+    if (!rules) return { success: false, error: 'Rules not loaded' };
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('office_rules')
+      .update({ ...patch, updated_by: user?.id ?? null })
+      .eq('id', rules.id);
+    if (error) {
+      toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+      return { success: false, error: error.message };
+    }
+    toast({ title: 'Office rules updated' });
+    fetchRules();
+    return { success: true };
+  };
+
+  return { rules, isLoading, saveRules, refetch: fetchRules };
+}
