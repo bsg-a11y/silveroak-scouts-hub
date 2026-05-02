@@ -1147,6 +1147,45 @@ export type Database = {
         }
         Relationships: []
       }
+      office_rules: {
+        Row: {
+          close_time: string
+          created_at: string
+          enforce_window: boolean
+          id: string
+          monthly_hours_target: number
+          open_time: string
+          rules_text: string
+          updated_at: string
+          updated_by: string | null
+          weekly_hours_target: number
+        }
+        Insert: {
+          close_time?: string
+          created_at?: string
+          enforce_window?: boolean
+          id?: string
+          monthly_hours_target?: number
+          open_time?: string
+          rules_text?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekly_hours_target?: number
+        }
+        Update: {
+          close_time?: string
+          created_at?: string
+          enforce_window?: boolean
+          id?: string
+          monthly_hours_target?: number
+          open_time?: string
+          rules_text?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekly_hours_target?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           aadhaar_number: string | null
