@@ -166,7 +166,7 @@ export function MemberComplianceDashboard({ members }: Props) {
         college: m.college_name || '-',
         department: m.academic_department || '-',
         role: m.role || 'member',
-        weeklyMin, monthlyMin, weeklyMet, monthlyMet,
+        weeklyMin: weekMin, monthlyMin: monthMin, weeklyMet, monthlyMet,
         activityPct: aPct, meetingPct: mPct, combinedPct: cPct,
         activityMet, meetingMet, combinedMet,
         metCount, totalRules, overall,
