@@ -4,6 +4,7 @@ import { ExternalParticipantsManager } from '@/components/ExternalParticipantsMa
 import { OfficeAttendanceSection } from '@/components/OfficeAttendanceSection';
 import { AttendancePercentageSection } from '@/components/AttendancePercentageSection';
 import { OfficeRulesCard } from '@/components/OfficeRulesCard';
+import { MemberComplianceDashboard } from '@/components/MemberComplianceDashboard';
 import { useOfficeAttendance, formatHours, sumMinutes } from '@/hooks/useOfficeAttendance';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -389,6 +390,7 @@ export default function Attendance() {
                 <TabsTrigger value="meetings">Meeting Attendance</TabsTrigger>
                 <TabsTrigger value="office">Office Attendance</TabsTrigger>
                 <TabsTrigger value="reports">Reports & Filter</TabsTrigger>
+                <TabsTrigger value="compliance">Member Compliance</TabsTrigger>
               </>
             )}
           </TabsList>
@@ -752,6 +754,10 @@ export default function Attendance() {
 
               <TabsContent value="reports" className="space-y-4">
                 <AttendancePercentageSection members={members} />
+              </TabsContent>
+
+              <TabsContent value="compliance" className="space-y-4">
+                <MemberComplianceDashboard members={members} />
               </TabsContent>
             </>
           )}
