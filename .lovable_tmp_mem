@@ -1,0 +1,10 @@
+---
+name: Member compliance dashboard
+description: Admin dashboard aggregating per-member rule compliance (office hours, activity %, meeting %) with filters and export
+type: feature
+---
+Admin-only tab in Attendance page (`MemberComplianceDashboard`).
+Evaluates each active member against 5 rules: weekly office hrs target, monthly office hrs target, activity attendance %, meeting attendance %, combined %.
+Per-rule Met/Below badges + overall status: Compliant (all met) / Partial (within 2 of full) / Non-Compliant.
+Filters: search, college, department, role, status, period (week/month/custom), thresholds for activity & meeting %.
+Export: Excel and Print/PDF. Realtime updates via office_attendance_logs subscription.
